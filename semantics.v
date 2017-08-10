@@ -36,7 +36,7 @@ Inductive eval: Map r ρ
     (M, L, H, S, C, read e) ↦ (v, E ++ [mread l v])
   | ERead2 : ∀ M L H S C e l E v,
     (M, L, H, S, C, e) ↦ (vl l, E) →
-    l ∉ C → 
+    l ∈ C → 
     (M, L, H, S, C, read e) ↦ (v, E ++ [mread l v]) 
   | EWrite : ∀ M L H S S' C e1 e2 l E1 E2 E v,
     (M, L, H, S, C, e1) ↦ (vl l, E1) →
@@ -99,7 +99,7 @@ Inductive eval: Map r ρ
   | ELet : ∀ M L H S C e b id v E v' E' t S' E'', 
     (M, L, H, S, C, e) ↦ (v, E) →
     S' = apply E S →
-    (M, (id, v) :: L, H, S, C, b) ↦ (v', E')  →
+    (M, (id, v) :: L, H, S', C, b) ↦ (v', E')  →
     valid_interleave S C E'' [E; E'] →
     (M, L, H, S, C, elet id t e b) ↦ (v', E'')
   | EId : ∀ M L H S C x v,

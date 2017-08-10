@@ -1,0 +1,76 @@
+\title{A Formal Specification of Legion}
+\author{George Stelle \inst{1} \and Noah Evans \inst{2}}
+\institute{Los Alamos National Laboratory \\ 
+\email{stelleg@lanl.gov}
+\and Sandia National Laboratories 
+\email{nevans@sandia.gov}}
+
+\begin{abstract}
+Legion is a programming model that constrains effects in a way that ensures
+serial semantics are preserved. We formalize the Legion semantics in a
+mechanized proof assistant, Coq, and show how this enables one to reason
+formally and prove theorems about the semantics. We also discuss how to extend
+this work to prove that serial semantics are preserved and how given enough
+time, one could extend the effort to prove an implementation is correct.
+\end{abstract}
+
+\section{Intro}
+High performance computing, as the name implies, has long focused on
+performance, and for good reason. Expensive machines are purchased to run
+increasingly complex simulations, and every optimization can save huge amounts
+of money, both due to the initial cost of the machine and the cost of power to
+run it. 
+
+That said, what good is a computation if we aren't relatively certain that the
+answers it returns are correct? Presumably, these computations inform important
+decisions about topics ranging from climate to nuclear safety. We should be as
+confident as we can be that we aren't basing these decisions on bugs. 
+
+\section{Background}
+
+Legion is a programming model for high performance computing that enables
+reasoning about with the attractive property that it is
+guaranteed to preserve serial semantics. It achieves this by dividing memory
+into logical regions. This allows programmers to avoid the
+burden 
+
+\subsection{Theorem Provers}
+
+Improvements to proof assistants over recent decades have made them a powerful
+tool for implementing and reasoning about code. From provably correct compilers
+to provably correct operating systems, proof assistants enable extremely high
+certainty in correctness even for large scale software projects. 
+
+\section{A Formal Specification of Legion}
+
+"A program without a specification cannot be incorrect, it can only be
+surprising." TODO: Find quote source in recent Appel paper. One of the most
+important and challenging aspects of proving correctness is defining a formal
+specification of what a program *should* do. Indeed, there is currently a large
+NSF effort dedicated to improving our ability to do just this \cite{deepspec}. 
+
+One thing that makes Legion unique among high performance runtime systems is
+that it provides a specification of its operational semantics \cite{oopsla13}.
+We take this specification of and formalize it in Coq, enabling us to prove
+lemmas and theorems about it.
+
+\section{Discussion}
+
+One common theme in formalizing systems is the discovery of holes in the
+informal specification. For example, when formalizing the C language for the
+CompCert project, Leroy et. al. found many cases where the specification was
+incomplete. Note that this is seperate notion from undefined behavior. Undefined
+behavior in a specification is well defined. A little bit like known unknowns
+vs. unknown unknowns, gaps in a specification  
+
+In formalizing Legion, we discovered that while there is an impressive theory
+ensuring that the side effects of function calls running concurrently preserve
+serial semantics, there is no theory for what function calls can run
+concurrently based on value dependencies. For example, consider the infamous
+fibonacci sequence example: 
+
+\begin{lstlisting}
+fib(n) = if n < 2 then 1 else fib(n-1) + fib(n-2)
+\end{lstlisting}
+ 
+It is well known that the function calls require   
