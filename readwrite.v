@@ -3,17 +3,21 @@ Require Import syntax semantics util.
 Require Import List.
 Import ListNotations.
 
-(* A proof that the program: 
+(*
+  A proof that the program: 
 
-  let x = read y in
-    write z x
+  let x = read l 
+  let y = write l' x
+      in read l
 
-  can result in the memory operations ordered as [write, read]
+  can evaluate to the memory operations [write l' x, read l x]
 *)
 
 Definition read_write x y t T r :=
   elet x t (read (id y)) 
     (write (new T r) (id x)).
+
+(* We use `new` to ensure l' ≠ l *)
 
 Lemma read_write_ordering : ∀ x y l t T r v l',
   ([(r, [l'])], [(y, vl l)], [], [(l,v)], [], new T r) ↦ (vl l', []) →

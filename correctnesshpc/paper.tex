@@ -1,13 +1,13 @@
-\documentclass[sigconf]{acmart}
+\documentclass[sigplan]{acmart}
 
 \usepackage{booktabs} % For formal tables
 \usepackage{listings} % For formal tables
-
 
 % Copyright
 %\setcopyright{none}
 %\setcopyright{acmcopyright}
 %\setcopyright{acmlicensed}
+\settopmatter{printacmref=false}
 \setcopyright{rightsretained}
 %\setcopyright{usgov}
 %\setcopyright{usgovmixed}
@@ -24,32 +24,22 @@
 %Conference
 \acmConference[Correctness'17]{Correctness 2017: First International Workshop on
   Software Correctness for HPC Applications}{November 2017}{Denver Colorado, USA} 
-\acmYear{1997}
-\copyrightyear{2016}
+\acmYear{2017}
+\copyrightyear{2017}
 
-\acmPrice{15.00}
+%\acmPrice{15.00}
 
+\begin{document}
+
+\title{Towards Correct Legion}
 \author{George Stelle}
-\authornote{where does this go? what's an orcid?}
-\orcid{1234-5678-9012}
-\affiliation{%
-  \institution{Los Alamos National Laboratories}
-}
-\email{gstelle@lanl.gov}
+\affiliation{\institution{Los Alamos National Laboratories}}
+\email{stelleg@lanl.gov}
 
 \author{Noah Evans}
-\authornote{where?}
-\affiliation{%
-  \institution{Sandia National Laboratories}
-  \streetaddress{P.O. Box 1212}
-  \city{Dublin} 
-  \state{Ohio} 
-  \postcode{43017-6221}
-}
+\affiliation{\institution{Sandia National Laboratories}}
 \email{nevans@sandia.gov}
-\title{Towards Correct Legion}
-\begin{document}
-\maketitle{}<++>
+
 \begin{abstract}
 Legion is a programming model that uses logical regions of memory to reason about 
 locality and concurrency. We formalize the Legion semantics in a mechanized
@@ -58,6 +48,8 @@ prove theorems about the semantics. We also discuss how to extend this work to
 prove that serial semantics are preserved and how given enough time, one could
 extend the effort to prove an implementation is correct.
 \end{abstract}
+
+\maketitle
 
 \section{Intro}
 High performance computing, as the name implies, has long focused on
@@ -138,6 +130,6 @@ Fibonacci example, which naively computes the \texttt{n}'th Fibonacci number:
 fib(n) = if n < 2 then 1 else fib(n-1) + fib(n-2)
 \end{lstlisting}
  
-Of course 
-
+ \bibliographystyle{ACM-Reference-Format}
+ \bibliography{annotated}
 \end{document}
