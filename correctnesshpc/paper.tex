@@ -1,10 +1,55 @@
-\title{Towards Correct Legion}
-\author{George Stelle \inst{1} \and Noah Evans \inst{2}}
-\institute{Los Alamos National Laboratory \\ 
-\email{stelleg@lanl.gov}
-\and Sandia National Laboratories 
-\email{nevans@sandia.gov}}
+\documentclass[sigconf]{acmart}
 
+\usepackage{booktabs} % For formal tables
+\usepackage{listings} % For formal tables
+
+
+% Copyright
+%\setcopyright{none}
+%\setcopyright{acmcopyright}
+%\setcopyright{acmlicensed}
+\setcopyright{rightsretained}
+%\setcopyright{usgov}
+%\setcopyright{usgovmixed}
+%\setcopyright{cagov}
+%\setcopyright{cagovmixed}
+
+
+% DOI
+\acmDOI{10.475/123_4}
+
+% ISBN
+\acmISBN{123-4567-24-567/08/06}
+
+%Conference
+\acmConference[Correctness'17]{Correctness 2017: First International Workshop on
+  Software Correctness for HPC Applications}{November 2017}{Denver Colorado, USA} 
+\acmYear{1997}
+\copyrightyear{2016}
+
+\acmPrice{15.00}
+
+\author{George Stelle}
+\authornote{where does this go? what's an orcid?}
+\orcid{1234-5678-9012}
+\affiliation{%
+  \institution{Los Alamos National Laboratories}
+}
+\email{gstelle@lanl.gov}
+
+\author{Noah Evans}
+\authornote{where?}
+\affiliation{%
+  \institution{Sandia National Laboratories}
+  \streetaddress{P.O. Box 1212}
+  \city{Dublin} 
+  \state{Ohio} 
+  \postcode{43017-6221}
+}
+\email{nevans@sandia.gov}
+\title{Towards Correct Legion}
+\begin{document}
+\maketitle{}<++>
 \begin{abstract}
 Legion is a programming model that uses logical regions of memory to reason about 
 locality and concurrency. We formalize the Legion semantics in a mechanized
@@ -95,3 +140,4 @@ fib(n) = if n < 2 then 1 else fib(n-1) + fib(n-2)
  
 Of course 
 
+\end{document}
