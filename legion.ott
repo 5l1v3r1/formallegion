@@ -1,0 +1,250 @@
+metavar termvar, x ::= {{ com term variable }}
+{{ isa string}} {{ coq nat}} {{ hol string}} {{ coq-equality }}
+{{ ocaml int}} {{ lex alphanum}} {{ tex \mathit{[[termvar]]} }}
+
+indexvar index, i, j, k, n, m, p  ::= {{ isa num }} {{ coq nat }} {{ hol num }}
+grammar
+
+T :: T_ ::=
+  | bool :: :: Num
+  | int :: :: Va
+  | < T1,..,Tn > :: :: Tuple
+  | T @ r :: :: PointerOne
+  | T @ ( r1,..,rn ) :: :: Pointer
+  | T @ ( r1,..,rk ) :: :: Pointerk
+  | coloring ( r ) :: :: RegionColoring
+  | coloring ( rp ) :: :: RegionColoringp
+  | exists r1,..,rn . ( T1,..,Tn ) , Phi , Q -> Tr ::  :: Functions
+
+Om :: O_ ::=
+| { o1,..,on } :: :: RegionConstraint
+
+om :: o_ ::=
+| r1 <= r2 :: :: Subregion
+| r1 * r2 :: :: Disjointness
+
+Phi :: P_ ::=
+| { phi1,..,phin } :: :: privileges
+
+phi :: p_ ::=
+| reads ( r )  :: :: Reads
+| writes ( r ) :: :: Writes
+| reducesid ( r ) :: :: Reduces
+
+Q :: Q_ ::=
+| { q1,..,qn } :: :: CoherenceModes
+
+q :: q_ ::=
+| atomic ( r ) :: :: Atomic
+| simult ( r ) :: :: Simultaneous
+
+v :: v_ ::=
+| bv :: :: Base1
+| iv :: :: Base2
+| < v1 , v2 > :: :: Tuple
+| null :: :: NullLoc
+| l :: :: MemroyLoc
+%| { ( l , iv ) , ... } :: :: Coloring
+| < < rho1,..,rhon , v  > > :: :: RegRelInst
+
+bv :: bv_ ::=
+  | true                         ::   :: True       {{ com constant true }}
+  | false                         ::   :: False      {{ com constant false }}
+
+iv :: iv_ ::=
+| 0 :: :: Zero
+| S iv :: ::  Succ
+
+e :: E_ ::=
+  | x :: :: Va
+  | iv :: :: Aexp
+  | bv :: :: Bexp
+  | < e1,..,en > :: :: Tuple
+  | e iv :: :: Proj
+  | id :: :: Id
+  | new T @ r :: :: New
+  | null T @ r :: :: Null
+  | isnull (  e ) :: :: isNull
+  | upregion ( e , r1,..,rn ) :: :: UpRegion
+  | downregion ( e , r1,..,rn ) :: :: DownRegion
+  | read ( e ) :: :: Read
+  | write ( e1 , e2 ) :: :: Write
+  | reduce ( id , e1 , e2 ) :: :: Reduce
+  | newcolor r :: :: NewColor
+  | color ( e1 , e2 , e3 ) :: :: Color
+  | e1 + e2 :: :: IntOp
+  | e1 lt e2 :: :: Comp
+  | let id : T =  e1 in e2 :: :: Let
+  | if b then c0 else c1         ::  :: If         {{ com conditional }}
+  | id [ r1,..,rn ] ( e1,..,en ) :: :: FuncCall
+  | partition rp using e1 as r1,..,rn in e2 :: :: Part
+  | pack e1 as T [ r1,..,rn ] :: :: Pack
+  | unpack e1 as id :  T [ r1,..,rn ] in e2 :: :: Unpack
+
+logic :: L_ ::=
+  | forall i , phi in Phi :: :: Forall
+  | exists i . phi in Phi :: :: Exists 
+
+terminals :: terminals_ ::=
+  | exists                     ::   :: exists          {{ tex \exists }}
+  | forall                     ::   :: forall          {{ tex \forall }}
+  | in                         ::   :: in              {{ tex \in }}
+  | O                      ::   :: Omega           {{ tex \Omega }}
+  | o                      ::   :: omega           {{ tex \omega }}
+  | P                        ::   :: Phi             {{ tex \Phi }}
+  | phi                        ::   :: phi             {{ tex \phi }}
+  | rho                        ::   :: rho             {{ tex \rho }}
+  | \/                         ::   :: lor             {{ tex \lor }}
+  | /\                         ::   :: land            {{ tex \land }}
+  | ~                          ::   :: neg             {{ tex \neg }}
+  %| <                         ::   :: lt            {{ tex < }}
+  | <=                         ::   :: leq            {{ tex \leq }}
+  | -->                        ::   :: longrightarrow {{ tex \longrightarrow }}
+  | ->                         ::   :: rightarrow     {{ tex \rightarrow }}
+  | =>                         ::   :: Rightarrow     {{ tex \Rightarrow }}
+  | \                          ::   :: lambda         {{ tex \lambda }}
+  | |->                        ::   :: mapsto         {{ tex \mapsto }}
+  | |-                         ::   :: vdash          {{ tex \vdash }}
+  | empty                      ::   :: varnothing     {{ tex \varnothing }}
+  | *                          ::   :: times          {{ tex \times }}
+  | <:                         ::   :: subtype        {{ tex <: }}
+  | <                          ::   :: langle         {{ tex \langle }}
+  | >                          ::   :: rangle         {{ tex \rangle }}
+  | lt                         ::   :: lt             {{ tex < }}
+  | \\                         ::   :: Downarrow      {{ tex \Downarrow }}
+  | state                      ::   :: sigma          {{ tex \sigma }}
+  | G                          ::   :: Gamma          {{ tex \Gamma }}
+  | E                          ::   :: varepsilon        {{ tex \varepsilon }}
+
+defns
+Jtype :: '' ::= 
+
+defn
+G , P , O |- e : T :: :: typing :: T_ {{ com Typing }} by
+
+
+G,P,O |- e1 : T@(r1,..,rn) 
+% forall i . reads(ri) in P*
+----------------- :: Read
+G,P,O |- read(e1) : T
+
+G,P,O |- e1 : T@(r1,..,rn)
+G,P,O |- e2 : T
+% forall i . writes(ri) in P*
+----------------- :: Write
+G,P,O |- write(e1,e2) : T@(r1,..,rn)
+
+%G(id) = (T1,T2),empty,empty -> T1
+G,P,O |- e1 : T@(r1,..,rn)
+G,P,O |- e2 : T
+%forall i . reducesid(ri) \in Phi*
+----------------- :: Reduce
+G,P,O |- reduce(id,e1,e2) : T1@(r1,..,rn)
+
+
+----------------- :: New
+G,P,O |- new T@r : T@r
+
+%G,P,O |- e : T@(r1',..,rk')
+G,P,O |- e : T@(r1,..,rk)
+%forall i . exists j, ri' <= rj in O*
+----------------- :: UpRgn 
+G,P,O |- upregion(e1,r1,..,rn) : T@(r1,..,rn)
+
+%G,P,O |- e : T@(r1',..,rk')
+G,P,O |- e : T@(r1,..,rk)
+----------------- :: DnRgn 
+G,P,O |- downregion(e, r1,..,rn) : T@(r1,..,rn)
+
+----------------- :: NewColor
+G,P,O |- newcolor r : T@r
+
+G,P,O |- e1 : T@(r1,..,rn)
+G,P,O |- e2 : T@r
+G,P,O |- e3 : int
+----------------- :: Color
+G,P,O |- color(e1,e2,e3) : coloring(r)
+
+G,P,O |- e1 : coloring(rp)
+%O' = O /\ Band i \in [1,k] ri <= rp /\ Band i <= j <= k ri * rj
+G,P,O |- e2 : T
+%{r1,..,rk} in regions_of(G,T) = empty
+----------------- :: Partition
+G,P,O |- partition rp using e1 as r1,..,rk in e2: T
+
+%T1 = exists r1',..,rk'.T2 where O1
+%O1[r1/r1',..,rk/rk'] subseteq O*
+G,P,O |- e3 : int
+----------------- :: Pack
+G,P,O |- pack e1 as T1[r1,..,rk]:T1
+
+%T1 = exists r1',..,rk'.T2 where O1
+G,P,O |- e1 : T1
+%G' = G[T2[r1/r1',..,rk/rk']/id]
+%O' = O union O1[r1/r1',..,rk/rk']
+G',P,O' |- e2 : T3
+%{r1,..,rk} int regions_of(G,T) = empty
+----------------- :: UnPack
+G,P,O |- unpack e1 as id: T1[r1,..,rk] in e2:T3
+
+%G(id) = forall r1',..,rk'.(T1,..,Tn),P',Q' -> Tr
+G,P,O |- ei : Ti[r1/r1',..,rk/rk']
+%P'[r1/r1',..,rk/rk'] subseteq P*
+----------------- :: Call
+G,P,O |- id[r1,..,rk](e1,..,en):Tr[r1/r1',..,rk/rk']
+
+%for 1 <= i <= p,
+%O1[r1/r1',..,rk/rk'] subseteq O*
+G,P,O |- e3 : int
+----------------- :: Program
+|- {function id1[r11,..,rk11](a11:T11,..,a1n1), P1,Q1,T1r:e1,... {function idp[r1p,..,rkpp](a1p:T1p,..,apnp), Pp,Qp,Tpr:ep,... color(e1,e2,e3) : coloring(r):*
+
+defns
+Jop :: '' ::= 
+
+defn
+p --> p' :: :: red :: E_ {{ com Evaluation }} by
+
+% so we need to come up with a simple semantics for this machine.
+
+%state ( x ) = n 
+------------------------------------------------- :: Set
+state,T,E[x := a] --> state,T,E[skip]
+%state,T,E[x := e] --> state [ x |-> n] ,T,E[skip]
+
+------------------------------------------------- :: Skip
+state, T, E[skip;c] --> state,T,E[c] 
+
+%state ( b ) = true
+------------------------------------------------- :: IfTrue
+state, T, E[if b then c0 else c1] --> state,T,E[c0] 
+
+
+%state ( b ) = false
+------------------------------------------------- :: IfFalse
+state, T, E[if b then c0 else c1] --> state,T,E[c1] 
+
+
+------------------------------------------------- :: While
+state, T, E[while b do c] --> state,T,E[if b then (c; while b do c) else skip] 
+
+------------------------------------------------- :: Async
+state, T, E[async c] --> state,T,E[skip]
+
+------------------------------------------------- :: Yield
+state, T, E[yield] --> state,T,E[skip]
+
+------------------------------------------------- :: MkPar
+state,T,E[mkpar e] --> state,T,E[skip]
+
+------------------------------------------------- :: Apply
+state,T,E[apply e1 e2] --> state,T,E[skip]
+
+---------------------------------------------------------- :: IfAt
+state,T,E[if e1 at e2 then e3 else e4] --> state,T,E[skip]
+
+------------------------------------------------- :: Put
+state,T,E[put e] --> state,T,E[skip]
+
+------------------------------------------------- :: Get
+state,T,E[get e1 e2] --> state,T,E[skip]
