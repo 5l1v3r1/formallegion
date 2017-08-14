@@ -2,41 +2,60 @@ metavar termvar, x ::= {{ com term variable }}
 {{ isa string}} {{ coq nat}} {{ hol string}} {{ coq-equality }}
 {{ ocaml int}} {{ lex alphanum}} {{ tex \mathit{[[termvar]]} }}
 
-indexvar index, i, j, k, n, m, p  ::= {{ isa num }} {{ coq nat }} {{ hol num }}
+indexvar index, i, j, k, n, m, p, id  ::= {{ isa num }} {{ coq nat }} {{ hol num }}
 grammar
 
 T :: T_ ::=
   | bool :: :: Num
   | int :: :: Va
-  | < T1,..,Tn > :: :: Tuple
+  | < T1 , .. , Tn > :: :: Tuple
   | T @ r :: :: PointerOne
-  | T @ ( r1,..,rn ) :: :: Pointer
-  | T @ ( r1,..,rk ) :: :: Pointerk
+  | T @ ( r1 , .. , rn ) :: :: Pointer
   | coloring ( r ) :: :: RegionColoring
-  | coloring ( rp ) :: :: RegionColoringp
-  | exists r1,..,rn . ( T1,..,Tn ) , Phi , Q -> Tr ::  :: Functions
+  | exists r1 , .. , rn . ( T1 , .. , Tm ) , P , Q -> Tr ::  :: Functions
 
-Om :: O_ ::=
-| { o1,..,on } :: :: RegionConstraint
+flist :: fl_ ::=
+| { fdef1 , .. , fdefn  } :: :: FuncList
 
-om :: o_ ::=
+fdef :: F_ ::=
+| function :: :: FuncTok
+
+r :: r_ ::=
+
+G {{ tex \Gamma }} :: G_ ::=
+| { ( e1 : T1 ) , .. , ( en : Tn ) } :: :: Context
+| empty :: :: EmptyContext
+
+O {{ tex \Omega }} :: O_ ::=
+| { om1 , .. , omn } :: :: RegionConstraint
+| empty :: :: EmptyConstraint
+
+rs :: O_ ::=
+| { r1 , .. , rn } :: :: Regions
+| empty :: :: EmptyRegion
+
+
+om {{ tex \omega }} :: o_ ::=
 | r1 <= r2 :: :: Subregion
 | r1 * r2 :: :: Disjointness
 
-Phi :: P_ ::=
-| { phi1,..,phin } :: :: privileges
+P {{ tex \Phi }} :: P_ ::=
+| { phi1 , .. , phin } :: :: Priv
+| empty :: :: EmptyPriv
 
-phi :: p_ ::=
+phi {{ tex \phi }} :: p_ ::=
 | reads ( r )  :: :: Reads
 | writes ( r ) :: :: Writes
 | reducesid ( r ) :: :: Reduces
 
 Q :: Q_ ::=
-| { q1,..,qn } :: :: CoherenceModes
+| { q1 , .. , qn } :: :: CoherenceModes
 
 q :: q_ ::=
 | atomic ( r ) :: :: Atomic
 | simult ( r ) :: :: Simultaneous
+
+rho {{ tex \rho }} :: rho_ ::=
 
 v :: v_ ::=
 | bv :: :: Base1
@@ -44,8 +63,8 @@ v :: v_ ::=
 | < v1 , v2 > :: :: Tuple
 | null :: :: NullLoc
 | l :: :: MemroyLoc
-%| { ( l , iv ) , ... } :: :: Coloring
-| < < rho1,..,rhon , v  > > :: :: RegRelInst
+%| { ( l1 , iv ) , .. , ( ln , iv ) } :: :: Coloring
+| < < rho1 , .. , rhon , v  > > :: :: RegRelInst
 
 bv :: bv_ ::=
   | true                         ::   :: True       {{ com constant true }}
@@ -76,28 +95,103 @@ e :: E_ ::=
   | e1 lt e2 :: :: Comp
   | let id : T =  e1 in e2 :: :: Let
   | if b then c0 else c1         ::  :: If         {{ com conditional }}
-  | id [ r1,..,rn ] ( e1,..,en ) :: :: FuncCall
-  | partition rp using e1 as r1,..,rn in e2 :: :: Part
-  | pack e1 as T [ r1,..,rn ] :: :: Pack
-  | unpack e1 as id :  T [ r1,..,rn ] in e2 :: :: Unpack
+  | id [ r1 , .. , rn ] ( e1 , .. , em ) :: :: FuncCall
+  | partition rp using e1 as r1 , .. , rn in e2 :: :: Part
+  | pack e1 as T [ r1 , .. , rn ] :: :: Pack
+  | unpack e1 as id :  T [ r1 , .. , rn ] in e2 :: :: Unpack
+  | function id [ r1 , .. , rn ] ( e1 , .. , em ) :: :: FuncDef
 
-logic :: L_ ::=
-  | forall i , phi in Phi :: :: Forall
-  | exists i . phi in Phi :: :: Exists 
+formula :: formula_ ::=  {{ com formulas }}
+   |  judgement                       ::   :: judgement
+          {{ com judgement }}
+   |  not formula                     :: M :: not
+          {{ com negated formula }} {{ tex \neg [[formula]] }}
+          {{ coq ~[[formula]] }}
+   |  ( formula )                     :: M :: brackets
+          {{ com bracketed }}
+          {{ tex \left([[formula]]\right) }} {{ isa ([[formula]]) }}
+          {{ coq [[formula]] }}
+   |  ALL i . phi in P :: M :: All
+           {{ com for all variables in domain of [[G]] }}
+           {{ tex \forall_[[i]]. [[phi]] \in [[P]] }}
+           {{ coq               forall [[i]]:[[P]], [[phi]] }}
+   |  EX i . phi in P :: M :: Exists
+           {{ com for all variables in domain of [[G]] }}
+           {{ tex \exists_[[i]]. [[phi]] \in [[P]] }}
+           {{ coq               exists [[i]]:[[P]], [[phi]] }}
+   |  ALL i . om in O :: M :: AllO
+           {{ com for all variables in domain of [[G]] }}
+           {{ tex \forall_[[i]]. [[om]] \in [[P]] }}
+           {{ coq               forall [[i]]:[[P]], [[om]] }}
+   |  EX i . om in O :: M :: ExistsO
+           {{ com for all variables in domain of [[G]] }}
+           {{ tex \exists_[[i]]. [[om]] \in [[P]] }}
+           {{ coq               exists [[i]]:[[P]], [[om]] }}
+   |  ALL i . formula :: M :: AllF
+           {{ com for all variables in domain of [[G]] }}
+           {{ tex \forall_[[i]]. [[formula]] }}
+           {{ coq               forall [[i]]:[[P]], [[formula]] }}
+   |  EX i . formula :: M :: ExistsF
+           {{ com for all variables in domain of [[G]] }}
+           {{ tex \exists_[[i]]. [[formula]] }}
+           {{ coq               exists [[i]], [[formula]] }}
+   | G ( id ) :: :: Lookup
+           {{ com lookup }}
+           {{ tex \[[G]]([[id]]) }}
+           {{ coq               In [[id]] [[G]] }}
+   | formula1 = formula2 :: :: Equality
+           {{ com equality }}
+           {{ tex [[formula1]] = [[formula2]] }}
+           {{ coq [[formula1]] = [[formula2]] }}
+   | formula1 /\ formula2 :: :: And
+           {{ com equality }}
+           {{ tex [[formula1]] \land [[formula2]] }}
+           {{ coq [[formula1]] /\ [[formula2]] }}
+   | BAND  i . formula :: M :: BigAnd
+           {{ com for all variables in domain of [[G]] }}
+           {{ tex \bigwedge_[[i]]. [[formula]] }}
+           {{ coq exists [[i]], [[formula]] }}
+   | formula1 INT formula2 :: M :: Intersect
+           {{ com for all variables in domain of [[G]] }}
+           {{ tex [[formula1]] \cap [[formula2]] }}
+           {{ coq Intersection [[formula1]] [[formula2]] }}
+   | formula1 UNION formula2 :: M :: Union
+           {{ com for all variables in domain of [[G]] }}
+           {{ tex [[formula1]] \cup [[formula2]] }}
+           {{ coq Intersection [[formula1]] [[formula2]] }}
+   | formula1 SUB formula2 :: M :: Subset
+           {{ com for all variables in domain of [[G]] }}
+           {{ tex [[formula1]] \subseteq [[formula2]] }}
+           {{ coq Subset [[formula1]] [[formula2]] }}
+   | G , P , O -> T :: :: TypeImpl
+           {{ com impl }}
+           {{ tex [[G]],[[P]],[[O]] \rightarrow [[T]] }}
+           {{ coq [[formula1]] = [[formula2]] }}
+  | phi :: :: Perm
+  | om :: :: omegas
+  | O :: :: Perms
+  | P :: :: Phi
+  | P [ r1 / r1' , .. , rn / rn' ] :: :: PhiRepl
+  | T [ r1 / r1' , .. , rn / rn' ] :: :: TypeRepl
+  | G [ r1 / r1' , .. , rn / rn' ] :: :: TypeContextRepl
+  | O[ r1 / r1' , .. , rn / rn' ] :: :: CompRepl
+  | regions_of ( G , T ) :: :: RegionsOf2
+  | regions_of ( G , T1, T2 ) :: :: RegionsOf3
+  | rs :: :: RegionsForm
 
 terminals :: terminals_ ::=
-  | exists                     ::   :: exists          {{ tex \exists }}
-  | forall                     ::   :: forall          {{ tex \forall }}
+  | EX  ::   :: exists          {{ tex \exists }}
+  | ALL ::   :: forall          {{ tex \forall }}
   | in                         ::   :: in              {{ tex \in }}
-  | O                      ::   :: Omega           {{ tex \Omega }}
-  | o                      ::   :: omega           {{ tex \omega }}
-  | P                        ::   :: Phi             {{ tex \Phi }}
+  | om                      ::   :: omega           {{ tex \omega }}
   | phi                        ::   :: phi             {{ tex \phi }}
   | rho                        ::   :: rho             {{ tex \rho }}
   | \/                         ::   :: lor             {{ tex \lor }}
   | /\                         ::   :: land            {{ tex \land }}
   | ~                          ::   :: neg             {{ tex \neg }}
   %| <                         ::   :: lt            {{ tex < }}
+
+  | *                         ::   :: sep {{ tex * }}
   | <=                         ::   :: leq            {{ tex \leq }}
   | -->                        ::   :: longrightarrow {{ tex \longrightarrow }}
   | ->                         ::   :: rightarrow     {{ tex \rightarrow }}
@@ -122,22 +216,21 @@ Jtype :: '' ::=
 defn
 G , P , O |- e : T :: :: typing :: T_ {{ com Typing }} by
 
-
-G,P,O |- e1 : T@(r1,..,rn) 
-% forall i . reads(ri) in P*
+G,P,O |- e1 : T@(r1,..,rn) [[:type1checks]]
+ALL i . reads(ri) in P' [[:readperm]]
 ----------------- :: Read
 G,P,O |- read(e1) : T
 
-G,P,O |- e1 : T@(r1,..,rn)
-G,P,O |- e2 : T
-% forall i . writes(ri) in P*
+G,P,O |- e1 : T@(r1,..,rn) [[:type1checks]]
+G,P,O |- e2 : T [[:type2checks]]
+ALL i . writes(ri) in P' [[:writeperm]]
 ----------------- :: Write
 G,P,O |- write(e1,e2) : T@(r1,..,rn)
 
-%G(id) = (T1,T2),empty,empty -> T1
-G,P,O |- e1 : T@(r1,..,rn)
-G,P,O |- e2 : T
-%forall i . reducesid(ri) \in Phi*
+{(e1:T1),(e2:T2)},empty,empty -> T [[:impl]]
+G,P,O |- e1 : T@(r1,..,rn) [[:type1checks]]
+G,P,O |- e2 : T [[:type2checks]]
+ALL i . reducesid(ri) in P' [[:regionscanreduce]]
 ----------------- :: Reduce
 G,P,O |- reduce(id,e1,e2) : T1@(r1,..,rn)
 
@@ -145,106 +238,64 @@ G,P,O |- reduce(id,e1,e2) : T1@(r1,..,rn)
 ----------------- :: New
 G,P,O |- new T@r : T@r
 
-%G,P,O |- e : T@(r1',..,rk')
-G,P,O |- e : T@(r1,..,rk)
-%forall i . exists j, ri' <= rj in O*
+% added n and k = thanks to ott
+G,P,O |- e : T@(r1',..,rk') [[:renamedregion]]
+G,P,O |- e : T@(r1,..,rn) [[:namedregion]]
+ALL i . EX j . ri' <= rj in O' [[:alwaysaless]]
 ----------------- :: UpRgn 
 G,P,O |- upregion(e1,r1,..,rn) : T@(r1,..,rn)
 
-%G,P,O |- e : T@(r1',..,rk')
-G,P,O |- e : T@(r1,..,rk)
+G,P,O |- e : T@(r1',..,rk') [[:haverenamed]]
 ----------------- :: DnRgn 
 G,P,O |- downregion(e, r1,..,rn) : T@(r1,..,rn)
 
 ----------------- :: NewColor
 G,P,O |- newcolor r : T@r
 
-G,P,O |- e1 : T@(r1,..,rn)
-G,P,O |- e2 : T@r
-G,P,O |- e3 : int
+G,P,O |- e1 : coloring(r) [[:type1checks]]
+G,P,O |- e2 : T@r [[:type2checks]]
+G,P,O |- e3 : int [[:type3checks]]
 ----------------- :: Color
 G,P,O |- color(e1,e2,e3) : coloring(r)
 
-G,P,O |- e1 : coloring(rp)
-%O' = O /\ Band i \in [1,k] ri <= rp /\ Band i <= j <= k ri * rj
-G,P,O |- e2 : T
-%{r1,..,rk} in regions_of(G,T) = empty
+G,P,O |- e1 : coloring(rp) [[:firstargcoloring]]
+(O' = O) /\ ((BAND i . ri <= rp) /\ (BAND j. ri * rj)) [[:everythingless]]
+G,P,O' |- e2 : T [[:type2checks]]
+({r1,..,rk} INT regions_of(G,T)) = empty [[:allregionsempty]]
 ----------------- :: Partition
 G,P,O |- partition rp using e1 as r1,..,rk in e2: T
 
-%T1 = exists r1',..,rk'.T2 where O1
-%O1[r1/r1',..,rk/rk'] subseteq O*
-G,P,O |- e3 : int
+T1 = EX r1',..,rk'.T2 where O1
+O1[r1/r1',..,rk/rk'] SUB O'
+G,P,O |- e1 : int [[:type1checks]]
+({r1,..,rk} INT regions_of(G,T)) = empty [[:allregionsempty]]
 ----------------- :: Pack
 G,P,O |- pack e1 as T1[r1,..,rk]:T1
 
-%T1 = exists r1',..,rk'.T2 where O1
-G,P,O |- e1 : T1
-%G' = G[T2[r1/r1',..,rk/rk']/id]
-%O' = O union O1[r1/r1',..,rk/rk']
-G',P,O' |- e2 : T3
-%{r1,..,rk} int regions_of(G,T) = empty
+{{ T1 = exists r1',..,rk'.T2 where O }}
+G,P,O |- e1 : T1 [[:type1checks]]
+G' = G[T2[r1/r1',..,rk/rk'] [[:renamedtypecontext]]
+O' = (O UNION O1[r1/r1',..,rk/rk']) [[:renamedpermissions]]
+G',P,O' |- e2 : T3 [[:type2checks]]
+({r1,..,rk} INT regions_of(G,T1,T2)) = empty [[:allregionsempty]]
 ----------------- :: UnPack
 G,P,O |- unpack e1 as id: T1[r1,..,rk] in e2:T3
 
-%G(id) = forall r1',..,rk'.(T1,..,Tn),P',Q' -> Tr
-G,P,O |- ei : Ti[r1/r1',..,rk/rk']
-%P'[r1/r1',..,rk/rk'] subseteq P*
+{(e1:T1),.., (en:Tn)},P',Q' -> T [[:impl]]
+G,P,O |- e1 : T[r1/r1',..,rk/rk']
+P'[r1/r1',..,rk/rk'] SUB P' 
 ----------------- :: Call
-G,P,O |- id[r1,..,rk](e1,..,en):Tr[r1/r1',..,rk/rk']
+ G,P,O |- id[r1,..,rk](e1,..,en) : T
+ %Tr[r1/r1',..,rk/rk'] }}
 
-%for 1 <= i <= p,
-%O1[r1/r1',..,rk/rk'] subseteq O*
-G,P,O |- e3 : int
+% really there isn't much going on here.
+% it's just a list of functions.
+% and you are saying that. for each context the memory regions typecheck
+{{ for 1 <= i <= p, Subset O1[r1/r1',..,rk/rk'] O_star }}
 ----------------- :: Program
-|- {function id1[r11,..,rk11](a11:T11,..,a1n1), P1,Q1,T1r:e1,... {function idp[r1p,..,rkpp](a1p:T1p,..,apnp), Pp,Qp,Tpr:ep,... color(e1,e2,e3) : coloring(r):*
+G,P,O |- function id[r,..,rk](e1,..,en) : T
+%G,P,O |- {function id1[r,..,rk](a1,..,an), ,.. {function idp[r1p,..,rkpp](a1p:T1p,..,apnp), Pp,Qp,Tpr:ep,... color(e1,e2,e3) : coloring(r):* }
+% get rid of the G,P,O
+% that is going to require special coq
+% G,P,O |- {function id1[r11,..,rk11](a11:T11,..,a1n1), P1,Q1,T1r:e1,.. {function idp[r1p,..,rkpp](a1p:T1p,..,apnp), Pp,Qp,Tpr:ep,... color(e1,e2,e3) : coloring(r):* }
 
-defns
-Jop :: '' ::= 
-
-defn
-p --> p' :: :: red :: E_ {{ com Evaluation }} by
-
-% so we need to come up with a simple semantics for this machine.
-
-%state ( x ) = n 
-------------------------------------------------- :: Set
-state,T,E[x := a] --> state,T,E[skip]
-%state,T,E[x := e] --> state [ x |-> n] ,T,E[skip]
-
-------------------------------------------------- :: Skip
-state, T, E[skip;c] --> state,T,E[c] 
-
-%state ( b ) = true
-------------------------------------------------- :: IfTrue
-state, T, E[if b then c0 else c1] --> state,T,E[c0] 
-
-
-%state ( b ) = false
-------------------------------------------------- :: IfFalse
-state, T, E[if b then c0 else c1] --> state,T,E[c1] 
-
-
-------------------------------------------------- :: While
-state, T, E[while b do c] --> state,T,E[if b then (c; while b do c) else skip] 
-
-------------------------------------------------- :: Async
-state, T, E[async c] --> state,T,E[skip]
-
-------------------------------------------------- :: Yield
-state, T, E[yield] --> state,T,E[skip]
-
-------------------------------------------------- :: MkPar
-state,T,E[mkpar e] --> state,T,E[skip]
-
-------------------------------------------------- :: Apply
-state,T,E[apply e1 e2] --> state,T,E[skip]
-
----------------------------------------------------------- :: IfAt
-state,T,E[if e1 at e2 then e3 else e4] --> state,T,E[skip]
-
-------------------------------------------------- :: Put
-state,T,E[put e] --> state,T,E[skip]
-
-------------------------------------------------- :: Get
-state,T,E[get e1 e2] --> state,T,E[skip]
