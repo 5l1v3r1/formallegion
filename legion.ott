@@ -1,3 +1,7 @@
+embed {{ coq
+Require Import Nat.
+}}
+
 metavar termvar, x ::= {{ com term variable }}
 {{ isa string}} {{ coq nat}} {{ hol string}} {{ coq-equality }}
 {{ ocaml int}} {{ lex alphanum}} {{ tex \mathit{[[termvar]]} }}
@@ -15,11 +19,14 @@ T :: T_ ::=
   | coloring ( r ) :: :: RegionColoring
   | exists r1 , .. , rn . ( T1 , .. , Tm ) , P , Q -> Tr ::  :: Functions
 
-flist :: fl_ ::=
-| { fdef1 , .. , fdefn  } :: :: FuncList
+fresh :: ti_ ::=
+| iv :: :: TaskNum {{ coq [[iv]] }}
 
-fdef :: F_ ::=
-| function :: :: FuncTok
+fns :: '' ::=
+|    apply ( S , E ) :: :: apply
+|    valid_interleave ( S , C , E1 , .. , En ) :: :: valid_interleave
+|    taskid fresh :: :: taskid
+|    mark_coherence ( E , M , taskid ) :: :: MarkCoherence {{coq (mark_coherence ([[E]]) ([[M]]) taskid) }}
 
 r :: r_ ::=
 
@@ -30,7 +37,7 @@ G {{ tex \Gamma }} :: G_ ::=
 | { ( e1 : T1 ) , .. , ( en : Tn ) } :: :: Context
 | emptyC :: :: EmptyContext
 
-O {{ tex \Omega }} :: O_ ::=
+O {{ tex \Omega }} {{ coq Omega }} :: O_ ::=
 | { om1 , .. , omn } :: :: RegionConstraint
 | emptyO :: :: EmptyConstraint
 
@@ -57,9 +64,9 @@ Pst {{ tex \Phi^* }} :: Pst_ ::=
 
 
 phi {{ tex \phi }} :: p_ ::=
-| reads ( r )  :: :: Reads
-| writes ( r ) :: :: Writes
-| reducesid ( r ) :: :: Reduces
+| reads ( r )  :: :: Reads {{coq (reads [[r]])}}
+| writes ( r ) :: :: Writes {{coq (writes [[r]])}}
+| reducesid ( r ) :: :: Reduces {{coq (reduces [[r]])}}
 
 Q :: Q_ ::=
 | { q1 , .. , qn } :: :: CoherenceModes
@@ -68,24 +75,54 @@ q :: q_ ::=
 | atomic ( r ) :: :: Atomic
 | simult ( r ) :: :: Simultaneous
 
+M :: M_ ::=
+| M [[ Q ]] :: :: Qexpr
+
+L :: L_ ::=
+| L [ ( e1 , v1 ) , .. , ( en , vn ) ]  :: :: LMapping
+| L [ v / id ] :: :: LRepl
+
+K :: K_ ::=
+
+H :: H_ ::=
+| H ( l ) :: :: Hl
+
+S {{ coq Clobber }} :: S_ ::=
+
+C :: C_ ::=
+
+E :: E_ ::=
+| [ ] :: :: NullE
+| [ e ] :: :: exp
+| E ++ [ e ] :: :: Append {{ coq [[E]] ++ [ [[e]] ] }}
+
 rho {{ tex \rho }} :: rho_ ::=
 
+l :: ML_ ::=
+
 v :: v_ ::=
-| bv :: :: Base1
-| iv :: :: Base2
+| bv :: :: Base1 {{ coq [[bv]] }}
+| iv :: :: Base2 {{ coq [[iv]] }}
 | < v1 , v2 > :: :: Tuple
 | null :: :: NullLoc
-| l :: :: MemroyLoc
+%{{ coq [] }}
+| l :: :: MemoryLoc
+% {{ coq [[l]]}}
 %| { ( l1 , iv ) , .. , ( ln , iv ) } :: :: Coloring
 | < < rho1 , .. , rhon , v  > > :: :: RegRelInst
+%| S  :: :: Sthing
+| H :: :: Hthing
+%{{ coq [[H]]}}
+| K :: :: Kthing
+%{{ coq [[K]]}}
 
 bv :: bv_ ::=
   | true                         ::   :: True       {{ com constant true }}
   | false                         ::   :: False      {{ com constant false }}
 
 iv :: iv_ ::=
-| 0 :: :: Zero
-| S iv :: ::  Succ
+| 0 :: :: Zero {{ coq O}}
+| S iv :: ::  Succ {{ coq Datatypes.S [[iv]]}}
 
 ee :: ee_ ::=
 | ( e1 , .. , en ) :: :: Elist
@@ -94,9 +131,7 @@ id :: id_ ::=
 
 e :: E_ ::=
   | x :: :: Va
-  | iv :: :: Aexp
-  | bv :: :: Bexp
-  | < e1,..,en > :: :: Tuple
+  | < e1 , .. , en > :: :: Tuple
   | e iv :: :: Proj
   | id :: :: Id
   | new T @ r :: :: New
@@ -104,9 +139,12 @@ e :: E_ ::=
   | isnull (  e ) :: :: isNull
   | upregion ( e , r1,..,rn ) :: :: UpRegion
   | downregion ( e , r1,..,rn ) :: :: DownRegion
-  | read ( e ) :: :: Read
+  | read ( e ) :: :: Read {{coq (read ([[e]]))}}
+  | excl :: :: Perms
+  | read ( e1 , excl , e2 , e3 ) :: :: ReadE {{ coq (reade ([[e1]]) excl ([[e2]]) ([[e3]])}}
   | write ( e1 , e2 ) :: :: Write
   | reduce ( id , e1 , e2 ) :: :: Reduce
+  | reduceid ( l , e1 , e2 , e3 ) :: :: Reduceid
   | newcolor r :: :: NewColor
   | color ( e1 , e2 , e3 ) :: :: Color
   | e1 + e2 :: :: IntOp
@@ -119,12 +157,22 @@ e :: E_ ::=
   | unpack e1 as id :  T [ r1 , .. , rn ] in e2 :: :: Unpack
   | function id [ r1 , .. , rn ] ( e1 , .. , em ) :: :: FuncDef
   | { function id1 rr1 ee1 , .. , function idn rrn een }  :: :: FuncDefList
+  | v :: :: Value {{ coq [[v]] }}
+  | L :: :: Ls {{ coq [[L]] }}
+  % interesting how am I going to feed the context to the type here?
+  | e : T :: :: TypedExpr
+  | place :: :: PlaceHolder
   %| {function id1 [ r1 , .. , rn ]1 ( e1 , .. , em )1 , .. , function idn [ r1 , .. , rn ]n ( e1 , .. , em )n }  :: :: FuncDefList
+
+%subrules
+%  bv <:: v
+%  v <:: e
+%  iv <:: v
 
 formula :: formula_ ::=  {{ com formulas }}
    |  judgement                       ::   :: judgement
           {{ com judgement }}
-   |  not formula                     :: M :: not
+   |  ~ formula                     :: M :: not
           {{ com negated formula }}
           {{ tex \neg [[formula]] }}
           {{ coq ~[[formula]] }}
@@ -200,15 +248,19 @@ formula :: formula_ ::=  {{ com formulas }}
    | formula1 SUB formula2 :: M :: Subset
           % {{ com [[formula1]] is subset of [[formula2]] }}
            {{ tex [[formula1]] \subseteq [[formula2]] }}
-           {{ coq Subset [[formula1]] [[formula2]] }}
+           {{ coq subset [[formula1]] [[formula2]] }}
+   | formula1 INS formula2 :: M :: In
+          % {{ com [[formula1]] is subset of [[formula2]] }}
+           {{ tex [[formula1]] \in [[formula2]] }}
+           {{ coq subset [[formula1]] [[formula2]] }}
    | G , P , O -> T :: :: TypeImpl
            {{ com impl }}
            {{ tex [[G]],[[P]],[[O]] \rightarrow [[T]] }}
-           {{ coq [[G]],[[P]],[[O]] -> [[T]] }}
+           {{ coq [[G]] /\ [[P]] /\ [[O]] -> [[T]] }}
    | G , P , Q -> T :: :: QthingImpl
            {{ com impl }}
            {{ tex [[G]],[[P]],[[Q]] \rightarrow [[T]] }}
-           {{ coq [[G]],[[P]],[[Q]] -> [[T]] }}
+           {{ coq [[G]] /\ [[P]] /\ [[Q]] -> [[T]] }}
   | r1 , .. , rn :: :: RegL
   {{ com region list }}
   | phi :: :: Perm
@@ -219,11 +271,17 @@ formula :: formula_ ::=  {{ com formulas }}
   {{ com om }}
   {{ tex [[om]] }}
   {{ coq [[om]] }}
-  | O :: :: Perms
-  | P :: :: Phi
-  | Pst :: :: PhiStar
+  | O :: :: Perms {{ coq [[O]] }}
+  | P :: :: Phi {{ coq [[P]] }}
+  | Pst :: :: PhiStar {{ coq [[Pst]] }}
   | P [ r1 / r1' , .. , rn / rn' ] :: :: PhiRepl
   | T [ r1 / r1' , .. , rn / rn' ] :: :: TypeRepl
+  % fixme
+  | M [ rho1 / r1' , .. , rhon / rn' ] :: :: MemRepl {{ coq ([[M]])}}
+  | M [[ T ]] :: :: MemSem
+  | M [[ Q ]] :: :: MemQ
+  | domain ( S ) :: :: Domain
+  | M ( r ) :: :: MemLookup
   | G [ r1 / r1' , .. , rn / rn' ] :: :: TypeContextRepl
   | G [ e1 / T1 , .. , en / Tn ] :: :: TypeReplRepl
   | G :: :: TypeContF
@@ -233,6 +291,14 @@ formula :: formula_ ::=  {{ com formulas }}
   | regions_of ( G , T1, T2 ) :: :: RegionsOf3
   | rs :: :: RegionsForm
   | T :: :: TypeForm
+  | fns :: :: Fns {{ coq [[fns]] }}
+  | S :: :: Ss {{ coq [[S]] }}
+  | C :: :: Cs {{ coq [[C]] }}
+  | M :: :: Ms {{ coq [[M]] }}
+  | v :: :: Vs {{ coq [[v]] }}
+  | E :: :: Es {{ coq [[E]] }}
+  | L :: :: Ls {{ coq [[L]] }}
+  | </ ei = li // i IN n      /> :: :: ListComp
 
 terminals :: terminals_ ::=
   | EX  ::   :: exists          {{ tex \exists }}
@@ -267,6 +333,17 @@ terminals :: terminals_ ::=
   | G                          ::   :: Gamma          {{ tex \Gamma }}
   | E                          ::   :: varepsilon        {{ tex \varepsilon }}
 
+embed {{ coq
+Definition reads (_:e) := E_PlaceHolder.
+Definition writes (_:e) := E_PlaceHolder.
+Definition reduces (_:e) := E_PlaceHolder.
+Definition read (_:e) := E_PlaceHolder.
+Definition reade (_:e) := E_PlaceHolder.
+Definition write (_ _:e) :=  E_PlaceHolder.
+Definition reduce (_ _:e) := E_PlaceHolder.
+Definition mark_coherence (_:E) (_:M) (_:iv) := E_PlaceHolder.
+}}
+
 defns
 Jtype :: '' ::= 
 
@@ -274,21 +351,22 @@ defn
 G , P , O |- e : T :: :: typing :: T_ {{ com Typing }} by
 
 G,P,O |- e1 : T@(r1,..,rn) [[:type1checks]]
-ALL i . reads(ri) in Pst [[:readperm]]
+% so what to do here? 
+% ALL i . reads(ri) in Pst [[:readperm]]
 ----------------- :: Read
 G,P,O |- read(e1) : T
 
 G,P,O |- e1 : T@(r1,..,rn) [[:type1checks]]
 G,P,O |- e2 : T [[:type2checks]]
-ALL i . writes(ri) in Pst [[:writeperm]]
+%ALL i . writes(ri) in Pst [[:writeperm]]
 ----------------- :: Write
 G,P,O |- write(e1,e2) : T@(r1,..,rn)
 
 % potentially need to do a fix here
-{(e1:T1),(e2:T2)},emptyP,emptyO -> T1 [[:impl]]
+% {(e1:T1),(e2:T2)},emptyP,emptyO -> T1 [[:impl]]
 G,P,O |- e1 : T1@(r1,..,rn) [[:type1checks]]
 G,P,O |- e2 : T2 [[:type2checks]]
-ALL i . reducesid(ri) in Pst [[:regionscanreduce]]
+% ALL i . reducesid(ri) in Pst [[:regionscanreduce]]
 ----------------- :: Reduce
 G,P,O |- reduce(id,e1,e2) : T1@(r1,..,rn)
 
@@ -297,7 +375,7 @@ G,P,O |- reduce(id,e1,e2) : T1@(r1,..,rn)
 G,P,O |- new T@r : T@r
 
 G,P,O |- e : T@(r1',..,rk') [[:renamedregion]]
-ALL i . EX j . ri' <= rj in Ost [[:alwaysaless]]
+%ALL i . EX j . ri' <= rj in Ost [[:alwaysaless]]
 ----------------- :: UpRgn 
 G,P,O |- upregion(e1,r1,..,rn) : T@(r1,..,rn)
 
@@ -315,34 +393,36 @@ G,P,O |- e3 : int [[:type3checks]]
 G,P,O |- color(e1,e2,e3) : coloring(r)
 
 G,P,O |- e1 : coloring(rp) [[:firstargcoloring]]
-(O' = O) /\ ((BAND i . ri <= rp) /\ (BAND j. ri * rj)) [[:everythingless]]
+% (O' = O) /\ ((BAND i . ri <= rp) /\ (BAND j. ri * rj)) [[:everythingless]]
 G,P,O' |- e2 : T [[:type2checks]]
-(({r1,..,rk}) INTR regions_of(G,T)) = emptyR [[:allregionsempty]]
+%(({r1,..,rk}) INTR regions_of(G,T)) = emptyR [[:allregionsempty]]
 ----------------- :: Partition
 G,P,O |- partition rp using e1 as r1,..,rk in e2: T
 
-T1 = EX r1',..,rk'.T2 WHERE O1 [[:existstype]]
-O1[r1/r1',..,rk/rk'] SUB O' [[:renamedsub]]
+% is this necessary? need to think about this.
+% T1 = EX r1',..,rk'.T2 WHERE O1 [[:existstype]]
+% O1[r1/r1',..,rk/rk'] SUB O' [[:renamedsub]]
 G,P,O |- e1 : T2[r1/r1',..,rk/rk'] [[:type1checks]]
 ----------------- :: Pack
 G,P,O |- pack e1 as T1[r1,..,rk]:T1
 
-% T1 = exists r1',..,rk'.T2 where O 
-T1 = EX r1',..,rk'.T2 WHERE O1 [[:typeexists]]
+% T1 = exists r1',..,rk'.T2 where O
+% Is this necessary?
+% T1 = EX r1',..,rk'.T2 WHERE O1 [[:typeexists]]
 G,P,O |- e1 : T1 [[:type1checks]]
-G' = G[T2[r1/r1',..,rk/rk']/id] [[:renamedtypecontext]]
-O' = (O UNION O1[r1/r1',..,rk/rk']) [[:renamedpermissions]]
+%G' = G[T2[r1/r1',..,rk/rk']/id] [[:renamedtypecontext]]
+%O' = (O UNION O1[r1/r1',..,rk/rk']) [[:renamedpermissions]]
 G',P,O' |- e2 : T3 [[:type2checks]]
-({r1,..,rk} INTR regions_of(G,T1,T3)) = emptyR [[:allregionsempty]]
+%({r1,..,rk} INTR regions_of(G,T1,T3)) = emptyR [[:allregionsempty]]jjj
 ----------------- :: UnPack
 G,P,O |- unpack e1 as id: T1[r1,..,rk] in e2:T3
 
 %{(e1:T1),..,(en:Tn)}
-G,P',Q' -> T [[:impl]]
-G,P,O |- e1 : T[r1/r1',..,rk/rk'] [[:typerename1check]]
-P'[r1/r1',..,rk/rk'] SUB Pst  [[:renamedsub]]
+% G,P',Q' -> T [[:impl]]
+% G,P,O |- e1 : T[r1/r1',..,rk/rk'] [[:typerename1check]]
+%P'[r1/r1',..,rk/rk'] SUB Pst  [[:renamedsub]]
 ----------------- :: Call
- G,P,O |- id[r1,..,rk](e1,..,em) : T
+G,P,O |- id[r1,..,rk](e1,..,en) : T
 
 %Tr[r1/r1',..,rk/rk'] }}
 % really there isn't much going on here.
@@ -354,10 +434,160 @@ P'[r1/r1',..,rk/rk'] SUB Pst  [[:renamedsub]]
 % which means that I need to define a subset
 
 %{(e1:T1),..,(en:Tn)}
-trip1,..,tripp
-G,P',Q' -> T [[:impl]]
-O1[r1/r1',..,rk/rk'] SUB O' [[:replsubset]]
-G = G[e1/T1,..,em/Tm]
+%trip1,..,tripp
+% G,P',Q' -> T [[:impl]]
+% O1[r1/r1',..,rk/rk'] SUB O' [[:replsubset]]
+% G = G[e1/T1,..,em/Tm] [[:renamedprog]]
 ----------------- :: Program
 G,P,O |- {function id1 [r1,..,rk] (e1,..,em),..,function idn [r1,..,rk] (e1,..,em)} : T
+
+defns
+ Jop :: '' ::=
+
+defn
+M , L , H , S , C |- e |-> v , E  :: :: eval :: E {{ com Evaluation }} by
+
+% M == r to rho mappings
+% L == locals
+% H == heaps and types
+% E == dynamic memory trace
+% S == clobber semantics
+M,L,H,S,C |- e |-> l, E [[:prodvalue]]
+%S' = apply(S,E) [[:apply]]
+%~ (l INS C) [[:memnotclobber]]
+------------------------------------------------- :: Read1
+M,L,H,S,C |- read(e) |-> v, E
+%++[read(l,excl,v,0)]
+%M,L,H,S,C |- read(e) |-> S'(l), E++[read(l,excl,v,0)] 
+
+M,L,H,S,C |- e |-> l, E [[:prodvalue]]
+% S' = apply(S,E) [[:apply]]
+------------------------------------------------- :: Read2
+M,L,H,S,C |- read(e) |-> H(l), E
+%++[read(l,excl,v,0)] 
+
+M,L,H,S,C |- e1 |-> l, E1 [[:prod1value]]
+% S' = apply(S,E1) [[:apply]]
+M,L,H,S',C |- e2 |-> v, E2 [[:prod2value]]
+%valid_interleave(S,C,E',E1,E2) [[:validinterleave]]
+------------------------------------------------- :: Write
+M,L,H,S,C |- write(e1,e2) |-> l, E
+%++[read(l,excl,v,0)] 
+
+M,L,H,S,C |- e1 |-> l, E1 [[:prod1value]]
+% S' = apply(S,E1) [[:apply]]
+M,L,H,S',C |- e2 |-> v, E2 [[:prod2value]]
+%valid_interleave(S,C,E',E1,E2) [[:validinterleave]]
+------------------------------------------------- :: Reduce
+M,L,H,S,C |- reduce(id,e1,e2) |-> l, E
+%++[reduceid(l,excl,v,0)]
+
+% l INS M(r) [[:meminmem]]
+%~(l INS domain(S)) [[:memindom]]
+%H(l) = M[[T]] [[:heapeqmemtype]]
+----------------- :: New
+M,L,H,S,C |- new T@r |-> l, []
+
+M,L,H,S,C |- e |-> v, E [[:prodvalue]]
+------------------------------------------------- :: UpRgn
+M,L,H,S,C |- upregion(e,r1,..,rn) |-> v, E
+
+M,L,H,S,C |- e |-> v, E [[:prodvalue]]
+% EX i. (l INS M(ri)) [[:inmem]]
+------------------------------------------------- :: DnRgn1
+M,L,H,S,C |- upregion(e,r1,..,rn) |-> l, E
+
+M,L,H,S,C |- e |-> v, E [[:prodvalue]]
+% ~(l INS M(ri)) [[:meminri]]
+------------------------------------------------- :: DnRgn2
+M,L,H,S,C |- upregion(e,r1,..,rn) |-> null, E
+
+M,L,H,S,C |- e1 |-> l, E1 [[:prod1value]]
+% S' = apply(S,E1) [[:apply1]]
+M,L,H,S',C |- e2 |-> v, E2 [[:prod2value]]
+% S'' = apply(S',E2) [[:apply2]]
+M,L,H,S'',C |- e3 |-> v, E3 [[:prod3value]]
+% need setbuilder notation here
+% K' = {(l,v)} UNION {(li,vi)}
+%valid_interleave(S,C,E',E1,E2) [[:validinterleave]]
+------------------------------------------------- :: Color
+M,L,H,S,C |- write(e1,e2) |-> l, E
+%++[read(l,excl,v,0)] 
+
+M,L,H,S,C |- e1 |-> K, E1 [[:prod1value]]
+% { rhoi ,
+M' = M[rho1/r1,..,rhok/rk] [[:memreplace]]
+% S' = apply(S,E1) [[:apply]]
+M,L,H,S',C |- e2 |-> v, E2 [[:prod2value]]
+%valid_interleave(S,C,E',E1,E2) [[:validinterleave]]
+------------------------------------------------- :: Partition
+M,L,H,S,C |- partition rp using e1 as r1,..,rk in e2 |-> l, E'
+
+M,L,H,S,C |- e1 |-> K, E1 [[:prod1value]]
+% { rhoi ,
+% v' = <<rho1,..,rhok,v>> [[:valismem]]
+------------------------------------------------- :: Pack
+M,L,H,S,C |- pack e1 as T1[r1,..,rk] |-> v', E
+
+M,L,H,S,C |- e1 |-> <<rho1,..,rhok,v>>,E1 [[:prod1memval]]
+M' = M[rho1/r1,..,rhok/rk]  [[:memreplace]]
+L'=L[v1/id] [[:lreplace]]
+% S'=apply(S,E1) [[:apply]]
+M',L',H,S',C |- e2 |-> v, E2 [[:prod2value]]
+%valid_interleave(S,C,E',E1,E2) [[:validinterleave]]
+------------------------------------------------- :: Unpack
+M,L,H,S,C |- unpack e1 as id:T1[r1,..,rk] in e2 |-> v2, E'
+
+
+M,L,H,S,C |- e1 |-> v1,E1 [[:prod1value]]
+% S1 = apply(S,E1) [[:apply]]
+%valid_interleave(S,C,E',E1,..,En) [[:validinterleave]]
+% need a way of making a synonym here
+%function id[r1',..,rk'](a1:T1,..,an:Tn),P',Q':Tr = en
+% function id[r1',..,rk'](e1:T1,..,en:Tn),P',Q':Tr = en [[:funcdef]]
+%+1
+M' = M[rho1/r1,..,rhok/rk] [[:memreplace]]
+% fixme
+%L'=L[(a1,v1),..,(an,vn)]
+L'=L[(e1,v1),..,(en,vn)] [[:memreplace]]
+% S'=apply(S,E') [[:apply]]
+%</ ei = li // i IN m      />  
+%C' = C UNION {l: EX rho. l IN rho /\ (atomic(rho) IN M'[[Q']] \/ simult(rho) IN M'[[Q']])}
+%M',L',H,S',C' |- en+1 |-> vn+1, En+1
+M',L',H,S',C' |- en |-> vn, En [[:nthvalue]]
+%En+1'=mark_coherence(En+1,M'[[Q']],taskid)
+%E'=mark_coherence(E,M'[[Q']],i) [[:makecoherence]]
+%i = taskid fresh [[:freshid]]
+%valid_interleave(S,C,E',E1,E2) [[:validinterleave]]
+------------------------------------------------- ::  Call
+M,L,H,S,C |- id[r1,..,rk](e1,..,en) |-> vn, E''
+%M,L,H,S,C |- id[r1,..,rk](e1,..,en) |-> vn+1, E''
+
+embed {{ coq
+Notation "G , P , O |- e : T ":= (typing G P O e T) (no associativity, at level 99). 
+Notation "M , L , H , S , C |- e |-> v , E" := (eval M L H S C e v E) (no associativity, at level 99).
+
+Theorem preservation : forall (e5:e) (t:T) (E:E) (M:M) (L:L) (H:H) (S:Clobber) (C:C) (T:T),
+    exists v,
+      eval M L H S C e5 v E ->
+      typing G_EmptyContext P_EmptyPriv O_EmptyConstraint e5 T  ->
+      exists G P Omega T, typing G P Omega (E_Value v) T.
+Proof.
+  intros.
+  eexists.
+  intros.
+  destruct e5; inversion H2.
+  repeat eexists.
+Admitted.
+
+Theorem progress : forall (e5:e) (t:T) (E:E) (M:M) (L:L) (H:H) (S:Clobber) (C:C) (T:T),
+    typing G_EmptyContext P_EmptyPriv O_EmptyConstraint e5 T  ->
+     exists v, eval M L H S C e5 v E.
+Proof.
+  intros.
+  eexists.
+  destruct e5.
+  destruct x.
+Admitted.
+}}
 
