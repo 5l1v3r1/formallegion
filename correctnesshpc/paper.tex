@@ -59,25 +59,33 @@ the initial cost of the machine and the cost of power to run it.
 
 That said, what good is a fast computation if we aren't certain that the
 values it computes are correct? Presumably, these computations inform important
-decisions about topics ranging from climate to nuclear safety. We should be as
-confident as possible that we aren't basing these decisions on unexpected
-semantics.
+decisions in areas ranging from climate to nuclear safety. We should strive to
+be as confident as possible that we aren't basing these decisions on buggy
+code.
 
-Recent work has shown that modular, composable formal specifications enable
-formal correctness proofs for large software systems that were previously
-unattainable. By integrating a formal specification tightly with an
-implementation, one can achieve the highest levels of confidence in code
-currently possible \cite{?}. For example, the Compcert project implements an
-optimizing c compiler and proves it correct. The success of Compcert in
-removing compiler bugs has been well documented. We will discuss later how 
-Compcert could be used in building verifiable HPC systems.
+The strongest guarantees of correctness come from the area of formal specifications 
+and proofs. A specification is a description of how a program should behave, while proofs
+are used to show that an implementation abides by a specification.
+\emph{Formal} specifications and proofs are defined as specifications and
+proofs that have been embedded in a machine-checked formal logic \cite{Coq,
+isabelle...}. This process of formalizing specifications and proofs in machine
+checked logics has been shown to catch common errors in previously informal proofs.
+
+In addition, recent work has shown that modular, composable formal
+specifications enable formal correctness proofs for large software systems that
+were previously unattainable \cite{?}. By integrating a formal specification
+tightly with an implementation, one can achieve the highest levels of
+confidence in code currently possible \cite{?}. For example, the Compcert
+project implements an optimizing c compiler and proves it correct. The success
+of Compcert in removing compiler bugs has been well documented. We will discuss
+later how Compcert could be used in building verifiable HPC systems.
 
 In HPC, programming models have become an increasingly important way to ensure
-that code stays maintanable, performant, and portable. We argue that these
-programming models provide a good target for formalization: any correctness
-arguments can be leveraged by every program using the model. It is exactly this 
-kind of modularization of proofs that has been so successful in proving programs 
-correct \cite{?}.
+that code stays maintanable, performant, and portable \cite{?}. We claim that
+these programming models provide a good target for formalization: any
+correctness arguments can be leveraged by every program using the model. It is
+exactly this kind of modularization of proofs that has been so successful in
+proving programs correct \cite{?}.
 
 For this paper, we take a recent programming model, Legion, and formalize its
 semantics and type system. We then prove a few supporting lemmas as examples of
@@ -90,10 +98,13 @@ for this pinnacle of software correctness!
 \section{Background}
 
 Legion is a programming model for high performance computing that enables
-reasoning about locality and with the attractive property that it is guaranteed
-to preserve serial semantics. It achieves this by dividing memory into logical
-regions.  This allows programmers to avoid the
-burden 
+reasoning about locality and concurrency via logical regions. It has the
+attractive property that it is guaranteed to preserve serial semantics for
+memory operations within logical regions. This allows programmers to avoid the
+burden of reasoning about the non-determinism that arises from concurrent
+computation. For this paper, we'll be basing our formalization work on the
+OOPSLA 2013 by Triechler et. al.  While there has been much work extending
+Legion since then, the core semantics has stayed relatively stable.
 
 Improvements to proof assistants over recent decades have made them a powerful
 tool for implementing and reasoning about code. From provably correct compilers
@@ -107,30 +118,31 @@ great strides have been made in using it to both build systems and prove useful
 properties about them \cite{compcert, certicoq, chlipala...}. 
 
 Specifications come in a wide range of formats. Many, like the OpenMP
-specification, are very informal, primarily consisting of english. Others, like
-Legion's previously, are written by hand in the using standard notation for
-logical relations, etc. For this paper, when we refer to a \emph{formal}
-specification, we are referring to a specification defined in a formal logic,
-like Coq. 
+specification, are very informal, primarily consisting of english descriptions
+of how different constructs should behave. Others, like Legion's, are written
+by hand in the using standard notation for logical relations, etc. For this
+paper, when we refer to a \emph{formal} specification, we are referring to a
+specification defined in a formal logic, like Coq. 
 
-While semantics defined in papers are a huge improvement over natural language
-specifications, there is still room for improvement. \cite{formalspec vs paper} has 
-shown that even hand-written mathematical specifications and proofs in computer
-science papers almost always have errors that can be caught by a formal proof.
-This is not to say, of course, that formal specifications and proofs are
-infallible.  On the contrary, it is quite easy to get a specification wrong.
-That said, often, if a there is a mistake in a spec , the process of proving it
-formally will expose that mistake, allowing for its correction. 
+While semantics defined by hand as logical relations are a huge improvement
+over natural language specifications, there is still much room for improvement.
+\cite{formalspec vs paper} has shown that even hand-written mathematical
+specifications and proofs in computer science papers almost always have errors
+that can be caught by a formal proof.  This is not to say, of course, that
+formal specifications and proofs are infallible.  On the contrary, it is quite
+easy to get a specification wrong.  That said, often, if a there is a mistake
+in a spec , the process of proving it formally will expose that mistake,
+allowing for its correction. 
 
 \section{A Formal Specification of Legion}
 
 "A program without a specification cannot be incorrect, it can only be
-surprising." \cite{appel}. One of the most important and challenging aspects of
-proving correctness is defining a formal specification of what a program
-*should* do. Indeed, there is currently a large NSF effort dedicated to
-improving our ability to do just this \cite{deepspec}. The choice of
-specification has far-reaching consequences in how easy it is to later prove
-correctness properties. For example, if a specification is chosen poorly, 
+surprising." \cite{appel} One of the most important and challenging aspects of
+proving correctness is defining a formal specification of how a program
+should behave. Indeed, there is currently a large NSF effort involving many of
+the best minds in programming languages dedicated to improving our ability to
+do just this \cite{deepspec}. The choice of specification has far-reaching
+consequences in how easy it is to later prove correctness properties.
 
 One thing that makes Legion unique among high performance runtime systems is
 that it provides a specification of its operational semantics \cite{oopsla13}.
@@ -141,14 +153,14 @@ syntax and semantics.
 The Legion semantics are defined as a small step operational semantics, which
 result in non-deterministic orderings of memory reads and writes. By defining a
 notion of \texttt{valid\_interleaves}, we can reason formally about what evaluations 
-can happen concurrently. This enables Treichler et al. to prove that if the runtime
-makes scheduling decisions based on region permissions in a particular way, serial 
-semantics are preserved with respect to the resulting heap state and return
-value. This is a desirable property: it means that any code using Legion can
-reason, either formally or informally, about its code with respect to a simple
-serial semantics, and have those semantics be preserved for parallel execution.
-This is in contrast to programming models like Cilk, which claim a weaker
-property: a serial execution is one of many valid executions. 
+can happen concurrently. This should allow us to prove formally that if the
+runtime makes scheduling decisions based on region permissions in a particular
+way, serial semantics are preserved with respect to the resulting heap state
+and return value. This is a desirable property: it means that any code using
+Legion can reason, either formally or informally, about its code with respect
+to a simple serial semantics, and have those semantics be preserved for
+parallel execution. This is in contrast to programming models like Cilk, which
+claim a weaker property: a serial execution is one of many valid executions. 
 
 \section{Discussion}
 
