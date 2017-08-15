@@ -53,16 +53,39 @@ extend the effort to prove an implementation is correct.
 
 \section{Intro}
 High performance computing, as the name implies, has long focused on
-performance, and for good reason. Expensive machines are purchased to run
-increasingly complex simulations, and every optimization can save huge amounts
-of money, both due to the initial cost of the machine and the cost of power to
-run it. 
+performance. Expensive machines are purchased to run increasingly complex
+simulations, and every optimization can save huge amounts of money, both due to
+the initial cost of the machine and the cost of power to run it. 
 
-That said, what good is a fast computation if we aren't relatively certain that
-the answers it returns are correct? Presumably, these computations inform
-important decisions about topics ranging from climate to nuclear safety. We
-should be as confident as possible that we aren't basing these decisions on
-unexpected semantics.
+That said, what good is a fast computation if we aren't certain that the
+values it computes are correct? Presumably, these computations inform important
+decisions about topics ranging from climate to nuclear safety. We should be as
+confident as possible that we aren't basing these decisions on unexpected
+semantics.
+
+Recent work has shown that modular, composable formal specifications enable
+formal correctness proofs for large software systems that were previously
+unattainable. By integrating a formal specification tightly with an
+implementation, one can achieve the highest levels of confidence in code
+currently possible \cite{?}. For example, the Compcert project implements an
+optimizing c compiler and proves it correct. The success of Compcert in
+removing compiler bugs has been well documented. We will discuss later how 
+Compcert could be used in building verifiable HPC systems.
+
+In HPC, programming models have become an increasingly important way to ensure
+that code stays maintanable, performant, and portable. We argue that these
+programming models provide a good target for formalization: any correctness
+arguments can be leveraged by every program using the model. It is exactly this 
+kind of modularization of proofs that has been so successful in proving programs 
+correct \cite{?}.
+
+For this paper, we take a recent programming model, Legion, and formalize its
+semantics and type system. We then prove a few supporting lemmas as examples of
+the kinds of things one can prove in an HPC settings. Finally, we discuss the
+some of the possible paths towards full, formally correct implementation. This
+is no small task, as we discuss later, and the ways forward are numerous and
+lengthy. But if we believe that HPC informs important decisions, we must strive
+for this pinnacle of software correctness!
 
 \section{Background}
 
@@ -92,24 +115,40 @@ like Coq.
 
 While semantics defined in papers are a huge improvement over natural language
 specifications, there is still room for improvement. \cite{formalspec vs paper} has 
-shown that even mathematical specifications and proofs in computer science
-papers almost always have errors that would be caught by a formal proof. This is not to say,
-of course, that formal specifications and proofs are infallible. On the contrary, it 
-is quite easy to get a specification wrong. That said, often, if a there is a mistake in a spec
-, the process of proving it formally will expose that mistake, allowing for its correction. 
+shown that even hand-written mathematical specifications and proofs in computer
+science papers almost always have errors that can be caught by a formal proof.
+This is not to say, of course, that formal specifications and proofs are
+infallible.  On the contrary, it is quite easy to get a specification wrong.
+That said, often, if a there is a mistake in a spec , the process of proving it
+formally will expose that mistake, allowing for its correction. 
 
 \section{A Formal Specification of Legion}
 
 "A program without a specification cannot be incorrect, it can only be
-surprising." TODO: Find quote source in recent Appel paper. One of the most
-important and challenging aspects of proving correctness is defining a formal
-specification of what a program *should* do. Indeed, there is currently a large
-NSF effort dedicated to improving our ability to do just this \cite{deepspec}. 
+surprising." \cite{appel}. One of the most important and challenging aspects of
+proving correctness is defining a formal specification of what a program
+*should* do. Indeed, there is currently a large NSF effort dedicated to
+improving our ability to do just this \cite{deepspec}. The choice of
+specification has far-reaching consequences in how easy it is to later prove
+correctness properties. For example, if a specification is chosen poorly, 
 
 One thing that makes Legion unique among high performance runtime systems is
 that it provides a specification of its operational semantics \cite{oopsla13}.
 We take this specification of and formalize it in Coq, enabling us to prove
-lemmas and theorems about it.
+lemmas and theorems about it. See Figure~\ref{?} for the Coq implementation of the
+syntax and semantics.
+
+The Legion semantics are defined as a small step operational semantics, which
+result in non-deterministic orderings of memory reads and writes. By defining a
+notion of \texttt{valid\_interleaves}, we can reason formally about what evaluations 
+can happen concurrently. This enables Treichler et al. to prove that if the runtime
+makes scheduling decisions based on region permissions in a particular way, serial 
+semantics are preserved with respect to the resulting heap state and return
+value. This is a desirable property: it means that any code using Legion can
+reason, either formally or informally, about its code with respect to a simple
+serial semantics, and have those semantics be preserved for parallel execution.
+This is in contrast to programming models like Cilk, which claim a weaker
+property: a serial execution is one of many valid executions. 
 
 \section{Discussion}
 
@@ -118,7 +157,8 @@ corresponding informal specification. For example, when formalizing the C
 language for the CompCert project, Leroy et. al. found many cases where the
 specification was incomplete. Note that this is seperate notion from undefined
 behavior. Undefined behavior in a specification is well defined. A little bit
-like known unknowns vs. unknown unknowns, gaps in a specification  
+like known unknowns vs. unknown unknowns, gaps in a specification can make it
+impossible to prove desired properties of a system.  
 
 In formalizing Legion, we discovered that while there is an impressive theory
 ensuring that the side effects of function calls running concurrently preserve
@@ -129,7 +169,33 @@ Fibonacci example, which naively computes the \texttt{n}'th Fibonacci number:
 \begin{lstlisting}
 fib(n) = if n < 2 then 1 else fib(n-1) + fib(n-2)
 \end{lstlisting}
- 
+
+\subsection{Performance}
+
+Returning to the "P" in "HPC", an important area of research is formal
+reasoning about performance. One of the challenges for Legion is that the
+scheduler has a non-trivial amount of work to do. Generally at least one core
+per node is dedicated entirely to runtime overheads. This is one area where
+Cilk, though fairly informally, shines. They prove a number of bounds on work
+that the scheduler has to do.  
+
+Ideally, we'd like to make similar claims about Legion runtime overheads.
+Currently, due to the complexity of the runtime implementation, this is
+infeasible. Like some of the desired correctness properties, a significant
+simplification of the runtime, and perhaps the semantics, would likely be
+required to achieve such a goal.
+
+\section{Conclusion}
+
+We hope to have convinced the reader of the importance and viability of proving
+software systems in HPC correct. While we've only taken small steps on the path
+to provably correct Legion, our hope is that it will inspire support for such 
+ventures by providing a convincing story on how to move forward. There is ever-
+increasing evidence that this class of deep specifications and certified software
+is an incredibly powerful tool for proving desirable properties about our large 
+software systems. We'd like to see more focus on correctness in HPC, and we think
+deep specifications and certified proofs are the way forward.
+
  \bibliographystyle{ACM-Reference-Format}
  \bibliography{annotated}
 \end{document}

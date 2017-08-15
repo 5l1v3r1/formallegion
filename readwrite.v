@@ -7,8 +7,7 @@ Import ListNotations.
   A proof that the program: 
 
   let x = read l 
-  let y = write l' x
-      in read l
+    write l' x
 
   can evaluate to the memory operations [write l' x, read l x]
 *)
