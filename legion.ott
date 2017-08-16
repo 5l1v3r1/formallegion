@@ -15,6 +15,7 @@ T :: T_ ::=
   | < T1 , .. , Tn > :: :: Tuple
   | T @ r :: :: PointerOne
   | T @ ( r1 , .. , rn ) :: :: Pointer
+  | T [ r1 , .. , rn ] :: :: TypeList
   | T [ r1 / r1' , .. , rn / rn' ] :: :: TypeRepl
   | coloring ( r ) :: :: RegionColoring
   | exists r1 , .. , rn . ( T1 , .. , Tm ) , P , Q -> Tr ::  :: Functions
@@ -134,27 +135,27 @@ e :: E_ ::=
   | < e1 , .. , en > :: :: Tuple
   | e iv :: :: Proj
   | id :: :: Id
-  | new T @ r :: :: New
+  | new T @ r :: :: New {{ coq (new ([[T]])) }}
   | null T @ r :: :: Null
-  | isnull (  e ) :: :: isNull
-  | upregion ( e , r1,..,rn ) :: :: UpRegion
-  | downregion ( e , r1,..,rn ) :: :: DownRegion
+  | isnull ( e ) :: :: isNull {{ coq (isnull ([[e]])) }}
+  | upregion ( e , r1 , .. , rn ) :: :: UpRegion {{ coq (upregion [[e]] [[r1 .. rn]] )}}
+  | downregion ( e , r1 , .. , rn ) :: :: DownRegion {{ coq (upregion [[e]] [[r1 .. rn]] )}}
   | read ( e ) :: :: Read {{coq (read ([[e]]))}}
   | excl :: :: Perms
   | read ( e1 , excl , e2 , e3 ) :: :: ReadE {{ coq (reade ([[e1]]) excl ([[e2]]) ([[e3]])}}
-  | write ( e1 , e2 ) :: :: Write
-  | reduce ( id , e1 , e2 ) :: :: Reduce
-  | reduceid ( l , e1 , e2 , e3 ) :: :: Reduceid
-  | newcolor r :: :: NewColor
-  | color ( e1 , e2 , e3 ) :: :: Color
+  | write ( e1 , e2 ) :: :: Write {{ coq (write ([[e1]]) ([[e2]])) }}
+  | reduce ( id , e1 , e2 ) :: :: Reduce {{ coq (reduce ([[id]]) ([[e1]]) ([[e2]]))}}
+  | reduceid ( l , e1 , e2 , e3 ) :: :: Reduceid  {{ coq (reduceid ([[l]]) ([[e1]]) ([[e2]]) ([[e3]]) )}}
+  | newcolor r :: :: NewColor {{ coq (newcolor ([[r]]))}}
+  | color ( e1 , e2 , e3 ) :: :: Color  {{ coq (color ([[e1]]) ([[e2]])) }}
   | e1 + e2 :: :: IntOp
   | e1 lt e2 :: :: Comp
   | let id : T =  e1 in e2 :: :: Let
   | if b then c0 else c1         ::  :: If         {{ com conditional }}
-  | id [ r1 , .. , rn ] ( e1 , .. , em ) :: :: FuncCall
-  | partition rp using e1 as r1 , .. , rn in e2 :: :: Part
-  | pack e1 as T [ r1 , .. , rn ] :: :: Pack
-  | unpack e1 as id :  T [ r1 , .. , rn ] in e2 :: :: Unpack
+  | id [ r1 , .. , rn ] ( e1 , .. , em ) :: :: FuncCall  {{ coq (fncall ([[id]]) ([[r1 .. rn]]) ([[e1 .. em]]))}}
+  | partition rp using e1 as r1 , .. , rn in e2 :: :: Part {{ coq (partition ([[rp]]) ([[e1]]) ([[r1 .. rn]]) ([[e2]]))}}
+  | pack e1 as T :: :: Pack {{ coq (pack ([[e1]]) ([[T]])) }}
+  | unpack e1 as id : T in e2 :: :: Unpack  {{ coq (unpack ([[e1]]) ([[id]]) ([[T]]) ([[e2]])) }}
   | function id [ r1 , .. , rn ] ( e1 , .. , em ) :: :: FuncDef
   | { function id1 rr1 ee1 , .. , function idn rrn een }  :: :: FuncDefList
   | v :: :: Value {{ coq [[v]] }}
@@ -340,8 +341,17 @@ Definition reduces (_:e) := E_PlaceHolder.
 Definition read (_:e) := E_PlaceHolder.
 Definition reade (_:e) := E_PlaceHolder.
 Definition write (_ _:e) :=  E_PlaceHolder.
-Definition reduce (_ _:e) := E_PlaceHolder.
+Definition reduce (_:id) (_ _:e) := E_PlaceHolder.
 Definition mark_coherence (_:E) (_:M) (_:iv) := E_PlaceHolder.
+Definition new (_:T) := E_PlaceHolder.
+Definition newcolor (_:r) := E_PlaceHolder.
+Definition color (_ _:e) := E_PlaceHolder.
+Definition upregion (_:e) (_:list_r) := E_PlaceHolder.
+Definition downregion (_:e) (_:list_r) := E_PlaceHolder.
+Definition partition (_:r) (_:e) (_:list_r) (_:e) := E_PlaceHolder.
+Definition pack (_:e) (_:T) := E_PlaceHolder.
+Definition unpack (_:e)  (_:id) (_:T) (_:e) := E_PlaceHolder.
+Definition fncall (_:id) (_:list_r) (_:list_e) := E_PlaceHolder.
 }}
 
 defns
@@ -495,12 +505,12 @@ M,L,H,S,C |- upregion(e,r1,..,rn) |-> v, E
 M,L,H,S,C |- e |-> v, E [[:prodvalue]]
 % EX i. (l INS M(ri)) [[:inmem]]
 ------------------------------------------------- :: DnRgn1
-M,L,H,S,C |- upregion(e,r1,..,rn) |-> l, E
+M,L,H,S,C |- downregion(e,r1,..,rn) |-> l, E
 
 M,L,H,S,C |- e |-> v, E [[:prodvalue]]
 % ~(l INS M(ri)) [[:meminri]]
 ------------------------------------------------- :: DnRgn2
-M,L,H,S,C |- upregion(e,r1,..,rn) |-> null, E
+M,L,H,S,C |- downregion(e,r1,..,rn) |-> null, E
 
 M,L,H,S,C |- e1 |-> l, E1 [[:prod1value]]
 % S' = apply(S,E1) [[:apply1]]
