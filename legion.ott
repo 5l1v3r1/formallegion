@@ -34,6 +34,9 @@ r :: r_ ::=
 rr :: rr_ ::=
 | [ r1 , .. , rn ] :: :: Rlist
 
+l :: ML_ ::=
+| nil :: :: NilLoc
+
 G {{ tex \Gamma }} :: G_ ::=
 | { ( e1 : T1 ) , .. , ( en : Tn ) } :: :: Context
 | emptyC :: :: EmptyContext
@@ -80,6 +83,7 @@ M :: M_ ::=
 | M [[ Q ]] :: :: Qexpr
 
 L :: L_ ::=
+| nil :: :: Nil
 | L [ ( e1 , v1 ) , .. , ( en , vn ) ]  :: :: LMapping
 | L [ v / id ] :: :: LRepl
 
@@ -95,11 +99,10 @@ C :: C_ ::=
 E :: E_ ::=
 | [ ] :: :: NullE
 | [ e ] :: :: exp
-| E ++ [ e ] :: :: Append {{ coq [[E]] ++ [ [[e]] ] }}
+| E ++ [ e ] :: :: Append {{ coq (E_Append [[E]] [[e]]) }}
 
 rho {{ tex \rho }} :: rho_ ::=
 
-l :: ML_ ::=
 
 v :: v_ ::=
 | bv :: :: Base1 {{ coq [[bv]] }}
@@ -116,14 +119,18 @@ v :: v_ ::=
 %{{ coq [[H]]}}
 | K :: :: Kthing
 %{{ coq [[K]]}}
+  | place :: :: PlaceHolder
+
 
 bv :: bv_ ::=
   | true                         ::   :: True       {{ com constant true }}
   | false                         ::   :: False      {{ com constant false }}
 
 iv :: iv_ ::=
-| 0 :: :: Zero {{ coq O}}
-| S iv :: ::  Succ {{ coq Datatypes.S [[iv]]}}
+| 0 :: :: Zero
+%{{ coq O}}
+| S iv :: ::  Succ
+%{{ coq Datatypes.S [[iv]]}}
 
 ee :: ee_ ::=
 | ( e1 , .. , en ) :: :: Elist
@@ -132,43 +139,77 @@ id :: id_ ::=
 
 e :: E_ ::=
   | x :: :: Va
-  | < e1 , .. , en > :: :: Tuple
-  | e iv :: :: Proj
-  | id :: :: Id
-  | new T @ r :: :: New {{ coq (new ([[T]])) }}
+  %| < e1 , .. , en > :: :: ETuple
+  %| e iv :: :: Proj
+  %| id :: :: Id
+  | new T @ r :: :: New
+  %{{ coq (new ([[T]])) }}
   | null T @ r :: :: Null
-  | isnull ( e ) :: :: isNull {{ coq (isnull ([[e]])) }}
-  | upregion ( e , r1 , .. , rn ) :: :: UpRegion {{ coq (upregion [[e]] [[r1 .. rn]] )}}
-  | downregion ( e , r1 , .. , rn ) :: :: DownRegion {{ coq (upregion [[e]] [[r1 .. rn]] )}}
-  | read ( e ) :: :: Read {{coq (read ([[e]]))}}
+  | isnull ( e ) :: :: isNull
+  %{{ coq (isnull ([[e]])) }}
+  | upregion ( e , r1 , .. , rn ) :: :: UpRegion
+  %{{ coq (upregion [[e]] [[r1 .. rn]] )}}
+  | downregion ( e , r1 , .. , rn ) :: :: DownRegion
+  %{{ coq (downregion [[e]] [[r1 .. rn]] )}}
+  | read ( e ) :: :: Read
+  %{{coq (read ([[e]]))}}
   | excl :: :: Perms
-  | read ( e1 , excl , e2 , e3 ) :: :: ReadE {{ coq (reade ([[e1]]) excl ([[e2]]) ([[e3]])}}
-  | write ( e1 , e2 ) :: :: Write {{ coq (write ([[e1]]) ([[e2]])) }}
-  | reduce ( id , e1 , e2 ) :: :: Reduce {{ coq (reduce ([[id]]) ([[e1]]) ([[e2]]))}}
-  | reduceid ( l , e1 , e2 , e3 ) :: :: Reduceid  {{ coq (reduceid ([[l]]) ([[e1]]) ([[e2]]) ([[e3]]) )}}
-  | newcolor r :: :: NewColor {{ coq (newcolor ([[r]]))}}
-  | color ( e1 , e2 , e3 ) :: :: Color  {{ coq (color ([[e1]]) ([[e2]])) }}
+  | read ( e1 , excl , e2 , e3 ) :: :: ReadE
+  % {{ coq (reade ([[e1]]) excl ([[e2]]) ([[e3]]))}}
+  | write ( e1 , e2 ) :: :: Write
+  % {{ coq (write ([[e1]]) ([[e2]])) }}
+  | reduce ( id , e1 , e2 ) :: :: Reduce
+  % {{ coq (reduce ([[id]]) ([[e1]]) ([[e2]]))}}
+  | reduceid ( l , e1 , e2 , e3 ) :: :: Reduceid
+  % {{ coq (reduceid ([[l]]) ([[e1]]) ([[e2]]) ([[e3]]) )}}
+  | newcolor r :: :: NewColor
+  % {{ coq (newcolor ([[r]]))}}
+  | color ( e1 , e2 , e3 ) :: :: Color
+  %{{ coq (color ([[e1]]) ([[e2]])) }}
   | e1 + e2 :: :: IntOp
   | e1 lt e2 :: :: Comp
   | let id : T =  e1 in e2 :: :: Let
   | if b then c0 else c1         ::  :: If         {{ com conditional }}
-  | id [ r1 , .. , rn ] ( e1 , .. , em ) :: :: FuncCall  {{ coq (fncall ([[id]]) ([[r1 .. rn]]) ([[e1 .. em]]))}}
-  | partition rp using e1 as r1 , .. , rn in e2 :: :: Part {{ coq (partition ([[rp]]) ([[e1]]) ([[r1 .. rn]]) ([[e2]]))}}
-  | pack e1 as T :: :: Pack {{ coq (pack ([[e1]]) ([[T]])) }}
-  | unpack e1 as id : T in e2 :: :: Unpack  {{ coq (unpack ([[e1]]) ([[id]]) ([[T]]) ([[e2]])) }}
+  | id [ r1 , .. , rn ] ( e1 , .. , em ) :: :: FuncCall
+  % {{ coq (fncall ([[id]]) ([[r1 .. rn]]) ([[e1 .. em]]))}}
+  | partition rp using e1 as r1 , .. , rn in e2 :: :: Part
+  % {{ coq (partition ([[rp]]) ([[e1]]) ([[r1 .. rn]]) ([[e2]]))}}
+  | pack e1 as T :: :: Pack
+  % {{ coq (pack ([[e1]]) ([[T]])) }}
+  | unpack e1 as id : T in e2 :: :: Unpack
+  % {{ coq (unpack ([[e1]]) ([[id]]) ([[T]]) ([[e2]])) }}
   | function id [ r1 , .. , rn ] ( e1 , .. , em ) :: :: FuncDef
   | { function id1 rr1 ee1 , .. , function idn rrn een }  :: :: FuncDefList
-  | v :: :: Value {{ coq [[v]] }}
-  | L :: :: Ls {{ coq [[L]] }}
+  % {{ coq (fnlist ([[id1 rr1 ee1 .. idn rrn een]])) }}
+  % | v :: :: Value
+  % {{ coq [[v]] }}
+  | L :: :: Ls
+  % {{ coq [[L]] }}
   % interesting how am I going to feed the context to the type here?
   | e : T :: :: TypedExpr
   | place :: :: PlaceHolder
   %| {function id1 [ r1 , .. , rn ]1 ( e1 , .. , em )1 , .. , function idn [ r1 , .. , rn ]n ( e1 , .. , em )n }  :: :: FuncDefList
-
-%subrules
-%  bv <:: v
-%  v <:: e
-%  iv <:: v
+  | bv :: :: Base1
+  % {{ coq [[bv]] }}
+  | iv :: :: Base2
+  % {{ coq [[iv]] }}
+  | < v1 , v2 > :: :: Tuple
+  | null :: :: NullLoc
+%{{ coq [] }}
+  | l :: :: MemoryLoc
+% {{ coq [[l]]}}
+  | < < rho1 , .. , rhon , v  > > :: :: RegRelInst
+%| S  :: :: Sthing
+  | H :: :: Hthing
+%{{ coq [[H]]}}
+  | K :: :: Kthing
+%{{ coq [[K]]}}
+  | true                         ::   :: True       {{ com constant true }}
+  | false                         ::   :: False      {{ com constant false }}
+  | 0 :: :: Zero
+  % {{ coq O}}
+  | S iv :: ::  Succ
+  % {{ coq Datatypes.S [[iv]]}}
 
 formula :: formula_ ::=  {{ com formulas }}
    |  judgement                       ::   :: judgement
@@ -176,7 +217,7 @@ formula :: formula_ ::=  {{ com formulas }}
    |  ~ formula                     :: M :: not
           {{ com negated formula }}
           {{ tex \neg [[formula]] }}
-          {{ coq ~[[formula]] }}
+          {{ coq ~([[formula]]) }}
    |  ( formula )                     :: M :: brackets
           {{ com bracketed }}
           {{ tex \left([[formula]]\right) }} {{ isa ([[formula]]) }}
@@ -352,7 +393,11 @@ Definition partition (_:r) (_:e) (_:list_r) (_:e) := E_PlaceHolder.
 Definition pack (_:e) (_:T) := E_PlaceHolder.
 Definition unpack (_:e)  (_:id) (_:T) (_:e) := E_PlaceHolder.
 Definition fncall (_:id) (_:list_r) (_:list_e) := E_PlaceHolder.
+Definition fnlist (_:list_id_rr_ee) := E_PlaceHolder.
 }}
+
+subrules
+  v <:: e
 
 defns
 Jtype :: '' ::= 
@@ -457,6 +502,12 @@ defns
 defn
 M , L , H , S , C |- e |-> v , E  :: :: eval :: E {{ com Evaluation }} by
 
+------ :: Va
+M,L,H,S,C |- x |-> v, E
+
+%------ :: Va
+%M,L,H,S,C |- e iv  |-> v, E
+
 % M == r to rho mappings
 % L == locals
 % H == heaps and types
@@ -497,6 +548,19 @@ M,L,H,S,C |- reduce(id,e1,e2) |-> l, E
 %H(l) = M[[T]] [[:heapeqmemtype]]
 ----------------- :: New
 M,L,H,S,C |- new T@r |-> l, []
+
+----------------- :: Null
+M,L,H,S,C |- null |-> null, []
+
+M,L,H,S,C |- e1 |-> l, E1 [[:prod1value]]
+l = null
+----------------- :: IsNullTrue
+M,L,H,S,C |- isnull(l) |-> true, []
+
+M,L,H,S,C |- e1 |-> l, E1 [[:prod1value]]
+~(l = null)
+----------------- :: IsNullFalse
+M,L,H,S,C |- isnull(l) |-> false, []
 
 M,L,H,S,C |- e |-> v, E [[:prodvalue]]
 ------------------------------------------------- :: UpRgn
@@ -549,22 +613,22 @@ M',L',H,S',C |- e2 |-> v, E2 [[:prod2value]]
 M,L,H,S,C |- unpack e1 as id:T1[r1,..,rk] in e2 |-> v2, E'
 
 
-M,L,H,S,C |- e1 |-> v1,E1 [[:prod1value]]
+%M,L,H,S,C |- e1 |-> v1,E1 [[:prod1value]]
 % S1 = apply(S,E1) [[:apply]]
 %valid_interleave(S,C,E',E1,..,En) [[:validinterleave]]
 % need a way of making a synonym here
 %function id[r1',..,rk'](a1:T1,..,an:Tn),P',Q':Tr = en
 % function id[r1',..,rk'](e1:T1,..,en:Tn),P',Q':Tr = en [[:funcdef]]
 %+1
-M' = M[rho1/r1,..,rhok/rk] [[:memreplace]]
+%M' = M[rho1/r1,..,rhok/rk] [[:memreplace]]
 % fixme
 %L'=L[(a1,v1),..,(an,vn)]
-L'=L[(e1,v1),..,(en,vn)] [[:memreplace]]
+%L'=L[(e1,v1),..,(en,vn)] [[:memreplace]]
 % S'=apply(S,E') [[:apply]]
 %</ ei = li // i IN m      />  
 %C' = C UNION {l: EX rho. l IN rho /\ (atomic(rho) IN M'[[Q']] \/ simult(rho) IN M'[[Q']])}
 %M',L',H,S',C' |- en+1 |-> vn+1, En+1
-M',L',H,S',C' |- en |-> vn, En [[:nthvalue]]
+%M',L',H,S',C' |- en |-> vn, En [[:nthvalue]]
 %En+1'=mark_coherence(En+1,M'[[Q']],taskid)
 %E'=mark_coherence(E,M'[[Q']],i) [[:makecoherence]]
 %i = taskid fresh [[:freshid]]
@@ -581,23 +645,41 @@ Theorem preservation : forall (e5:e) (t:T) (E:E) (M:M) (L:L) (H:H) (S:Clobber) (
     exists v,
       eval M L H S C e5 v E ->
       typing G_EmptyContext P_EmptyPriv O_EmptyConstraint e5 T  ->
-      exists G P Omega T, typing G P Omega (E_Value v) T.
+      exists G P Omega T, typing G P Omega v T.
 Proof.
   intros.
   eexists.
   intros.
-  destruct e5; inversion H2.
-  repeat eexists.
-Admitted.
+  destruct e5; repeat (inversion H2;
+  exists G_EmptyContext;
+  exists  P_EmptyPriv;
+  exists O_EmptyConstraint;
+  exists T0;
+  try (apply H2 || simpl;assumption || rewrite <- H9 at 1; rewrite H4;  assumption ) ).
 
-Theorem progress : forall (e5:e) (t:T) (E:E) (M:M) (L:L) (H:H) (S:Clobber) (C:C) (T:T),
+  rewrite H5.
+  assumption.
+  rewrite H3.
+  assumption.
+Qed.
+Theorem progress : forall (e5:e) (t:T) (M:M) (H:H) (S:Clobber) (C:C) (T:T),
     typing G_EmptyContext P_EmptyPriv O_EmptyConstraint e5 T  ->
-     exists v, eval M L H S C e5 v E.
+     exists v E L, eval M L H S C e5 v E.
 Proof.
   intros.
-  eexists.
   destruct e5.
-  destruct x.
-Admitted.
-}}
+  exists E_PlaceHolder.
+  exists E_NullE.
+  exists L_Nil.
+  apply EVa.
+  reflexivity.
+  reflexivity.
+  reflexivity.
+  (* are memory locations some or none? *)
+  exists (E_MemoryLoc ML_NilLoc).
+  exists (E_NullE).
+  exists L_Nil.
+  apply ENew.
+  reflexivity.
 
+}}
