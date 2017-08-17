@@ -1,19 +1,36 @@
-\documentclass[sigplan]{acmart}
+\documentclass[sigconf]{acmart}
 
 \usepackage{booktabs} % For formal tables
-\usepackage{listings} % For formal tables
+
+% Dejavu fonts have unicode character support
+\usepackage{DejaVuSansMono}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{listings} 
+\usepackage{fancyvrb}
+
+\usepackage{amssymb}
+\usepackage{bbm}
+\usepackage[greek,english]{babel}
+\usepackage{textgreek}
+
+%\usepackage{fontspec}
+%\defaultfontfeatures{Ligatures=TeX}
+
+\usepackage{ucs}
+\usepackage[utf8x]{inputenc}
+\usepackage{autofe}
 
 % Copyright
 %\setcopyright{none}
 %\setcopyright{acmcopyright}
 %\setcopyright{acmlicensed}
-\settopmatter{printacmref=false}
+%\settopmatter{printacmref=false}
 \setcopyright{rightsretained}
 %\setcopyright{usgov}
 %\setcopyright{usgovmixed}
 %\setcopyright{cagov}
 %\setcopyright{cagovmixed}
-
 
 % DOI
 \acmDOI{10.475/123_4}
@@ -40,6 +57,10 @@
 \affiliation{\institution{Sandia National Laboratories}}
 \email{nevans@sandia.gov}
 
+\author{Pat McCormick}
+\affiliation{\institution{Los Alamos National Laboratories}}
+\email{pat@lanl.gov}
+
 \begin{abstract}
 Legion is a programming model that uses logical regions of memory to reason about 
 locality and concurrency. We formalize the Legion semantics in a mechanized
@@ -63,13 +84,15 @@ decisions in areas ranging from climate to nuclear safety. We should strive to
 be as confident as possible that we aren't basing these decisions on buggy
 code.
 
-The strongest guarantees of correctness come from the area of formal specifications 
-and proofs. A specification is a description of how a program should behave, while proofs
-are used to show that an implementation abides by a specification.
-\emph{Formal} specifications and proofs are defined as specifications and
-proofs that have been embedded in a machine-checked formal logic \cite{Coq,
-isabelle...}. This process of formalizing specifications and proofs in machine
-checked logics has been shown to catch common errors in previously informal proofs.
+The strongest guarantees of correctness come from the area of formal
+specifications and proofs. A specification is a description of how a program
+should behave, while proofs are used to show that an implementation conforms to
+a specification. \emph{Formal} specifications and proofs are defined as
+specifications and proofs that have been embedded in a machine-checked formal
+logic \cite{Coq, isabelle...}. This process of formalizing specifications and
+proofs in machine checked logics has been shown to catch common errors in
+previously informal proofs \cite{papers}, and therefore is now considered
+to provide the highest assurance of correctness currently possible \cite{?}.
 
 In addition, recent work has shown that modular, composable formal
 specifications enable formal correctness proofs for large software systems that
@@ -92,8 +115,8 @@ semantics and type system. We then prove a few supporting lemmas as examples of
 the kinds of things one can prove in an HPC settings. Finally, we discuss the
 some of the possible paths towards full, formally correct implementation. This
 is no small task, as we discuss later, and the ways forward are numerous and
-lengthy. But if we believe that HPC informs important decisions, we must strive
-for this pinnacle of software correctness!
+difficult. But if we believe that HPC informs important decisions, we must
+rise to the challenge.
 
 \section{Background}
 
@@ -102,9 +125,9 @@ reasoning about locality and concurrency via logical regions. It has the
 attractive property that it is guaranteed to preserve serial semantics for
 memory operations within logical regions. This allows programmers to avoid the
 burden of reasoning about the non-determinism that arises from concurrent
-computation. For this paper, we'll be basing our formalization work on the
-OOPSLA 2013 by Triechler et. al.  While there has been much work extending
-Legion since then, the core semantics has stayed relatively stable.
+computation. For this paper, we'll be formalizating work on from Triecher et.
+al \cite{ooplsa13} While there has been much work extending Legion since then,
+the core semantics has stayed relatively stable \cite{regent, deppart}.
 
 Improvements to proof assistants over recent decades have made them a powerful
 tool for implementing and reasoning about code. From provably correct compilers
@@ -119,10 +142,10 @@ properties about them \cite{compcert, certicoq, chlipala...}.
 
 Specifications come in a wide range of formats. Many, like the OpenMP
 specification, are very informal, primarily consisting of english descriptions
-of how different constructs should behave. Others, like Legion's, are written
-by hand in the using standard notation for logical relations, etc. For this
-paper, when we refer to a \emph{formal} specification, we are referring to a
-specification defined in a formal logic, like Coq. 
+of how different constructs should behave \cite{openmp}. Others, like Legion's,
+are written by hand in the using standard notation for logical relations, etc.
+For this paper, when we refer to a \emph{formal} specification, we are
+referring to a specification defined in a formal logic, like Coq. 
 
 While semantics defined by hand as logical relations are a huge improvement
 over natural language specifications, there is still much room for improvement.
@@ -136,19 +159,53 @@ allowing for its correction.
 
 \section{A Formal Specification of Legion}
 
-"A program without a specification cannot be incorrect, it can only be
-surprising." \cite{appel} One of the most important and challenging aspects of
-proving correctness is defining a formal specification of how a program
-should behave. Indeed, there is currently a large NSF effort involving many of
-the best minds in programming languages dedicated to improving our ability to
-do just this \cite{deepspec}. The choice of specification has far-reaching
-consequences in how easy it is to later prove correctness properties.
+A program without a specification cannot be incorrect, it can only be
+surprising \footnote{Paraphrase of J.J. Horning, 1982}. One of the most
+important and challenging aspects of proving correctness is defining a formal
+specification of how a program should behave. Indeed, there is currently a
+large NSF effort involving many of the best minds in programming languages
+dedicated to improving our ability to do just this \cite{deepspec}. The choice
+of specification has far-reaching consequences in how easy it is to later prove
+correctness properties. 
 
 One thing that makes Legion unique among high performance runtime systems is
 that it provides a specification of its operational semantics \cite{oopsla13}.
 We take this specification of and formalize it in Coq, enabling us to prove
-lemmas and theorems about it. See Figure~\ref{?} for the Coq implementation of the
-syntax and semantics.
+lemmas and theorems about it. See Figure~\ref{?} for the Coq implementation of
+the syntax, and Figure~\ref{semantics}and semantics. All code is available
+online at \texttt{https://github.com/lanl/formallegion}. 
+
+\begin{figure}
+\centering
+\begin{BVerbatim}
+Inductive e :=
+  | bv : bool → e
+  | iv : nat → e
+  | etuple : list e → e
+  | eindex : e → nat → e
+  | id : var → e
+  | new : T → r → e
+  | null : T → r → e
+  | isnull : e → e
+  | upr : e → list r → e
+  | downr : e → list r → e
+  | read : e → e 
+  | write : e → e → e
+  | reduce : var → e → e
+  | newcolor : r → e
+  | color : e → e → e → e
+  | add : e → e → e
+  | lt : e → e → e
+  | elet : var → T → e → e → e
+  | eif : e → e → e → e
+  | call : var → list r → list e → e
+  | partition : r → e → list r → e → e
+  | pack : e → T → list r → e
+  | unpack : e → var → T → list r → e → e.
+\end{BVerbatim}
+\caption{Legion expression syntax}
+\label{syntax}
+\end{figure}
 
 The Legion semantics are defined as a small step operational semantics, which
 result in non-deterministic orderings of memory reads and writes. By defining a
@@ -162,52 +219,295 @@ to a simple serial semantics, and have those semantics be preserved for
 parallel execution. This is in contrast to programming models like Cilk, which
 claim a weaker property: a serial execution is one of many valid executions. 
 
-\section{Discussion}
+\begin{figure*}
+\centering
+\begin{BVerbatim}
+Reserved Notation " input ↦ output " (at level 50).
+Inductive eval: Map r ρ 
+              * Map var v
+              * Map l T
+              * Map l v
+              * list l 
+              * e 
+              → v * list memop
+              → Prop := 
+  | ERead1 : ∀ M L H S C e l E v,
+    (M, L, H, S, C, e) ↦ (vl l, E) →
+    l ∉ C → 
+    lookup l (apply E S) = Some v → 
+    (M, L, H, S, C, read e) ↦ (v, E ++ [mread l v])
+  | ERead2 : ∀ M L H S C e l E v,
+    (M, L, H, S, C, e) ↦ (vl l, E) →
+    l ∈ C → 
+    (M, L, H, S, C, read e) ↦ (v, E ++ [mread l v]) 
+  | EWrite : ∀ M L H S S' C e1 e2 l E1 E2 E v,
+    (M, L, H, S, C, e1) ↦ (vl l, E1) →
+    (M, L, H, S', C, e2) ↦ (v, E2) →
+    valid_interleave S C E [E1; E2] →
+    (M, L, H, S, C, write e1 e2) ↦ (vl l, E ++ [mwrite l v])
+  | ENew : ∀ M L H S C t l r, 
+    l ∈ lu r M →
+    l ∉ domain S →
+    (M, L, H, S, C, new t r) ↦ (vl l, [])
+  | EUpRgn : ∀ M L H S C e v E rs,
+    (M, L, H, S, C, e) ↦ (v, E) →
+    (M, L, H, S, C, upr e rs) ↦ (v, E)
+  | EColor : ∀ M L H S C K E1 E2 E3 E l e1 e2 e3 v, 
+    (M, L, H, S, C, e1) ↦ (vcoloring K, E1) → 
+    (M, L, H, apply E1 S, C, e2) ↦ (vl l, E2) → 
+    (M, L, H, apply E2 (apply E1 S), C, e3) ↦ (viv v, E3) → 
+    valid_interleave S C E [E1; E2; E3] →
+    (M, L, H, S, C, color e1 e2 e3) ↦ (vcoloring ((l,v)::K), E) 
+  | EPartition : ∀ M M' L H S C rs rp ρs e1 e2 K E' E1 E2 v, 
+    (M, L, H, S, C, e1) ↦ (vcoloring K, E1) → 
+    ρs = map (map fst) (groupBy (λ x y, beq_nat (snd x) (snd y)) K) →
+    M' = zip rs ρs ++ M →  
+    (M', L, H, S, C, e2) ↦ (v, E2) →
+    valid_interleave S C E' [E1; E2] →
+    (M, L, H, S, C, partition rp e1 rs e2) ↦ (v, E')  
+  | ECall : ∀ M L H S C es vs Es xs id rs En1 E'' E' M' L' S' C' t ts rs' e Phi Q v, 
+    (∀ e v E, In (e, (v, E)) (zip es (zip vs Es)) → (M, L, H, S, C, e) ↦ (v, E)) →
+    valid_interleave S C E' Es →
+    M' = zip rs' (map (λ r, lu r M) rs) →  
+    L' = zip xs vs →
+    S' = apply E' S → 
+    function id rs xs ts Phi Q t e →
+    (M', L', H, S', C', e) ↦ (v, En1) → 
+    valid_interleave S C E'' [E'; En1] →
+    (M, L, H, S, C, call id rs es) ↦ (v, E'')
+    ...
+where " input ↦ output " := (eval input output).
+\end{BVerbatim}
+\caption{Fragment of Legion's formal semantics defined in Coq}
+\label{semantics}
+\end{figure*}
 
-One common theme in formalizing systems is the discovery of holes in the
+The language is made up of some standard elements, e.g. \texttt{call},
+\texttt{id}, and some Legion-specific constructs e.g. \texttt{partition},
+\texttt{upr}. Evaluation is similar in nature, with the standard elements
+having standard semantics, and the 
+
+\section{Proofs}
+
+While so far we have discussed the formalization of the \emph{specification},
+we have largely left discussion of proofs by the wayside. In this section, we
+discuss the challenges of proving useful properties of real world systems, and
+give some examples of basic lemmas that will be useful in proving correctness
+properties of Legion. The hope is that the reader will gain some insight into
+the challenges involved in proving formal properties of systems of real-world
+systems.
+
+One of the core notions of Legion is the notion of region relations. These
+describe how regions are related, either by being disjoint, or by being
+subregions of one another. See Figure~\ref{regionrel} for the syntax. 
+
+\begin{figure*}
+\centering
+\begin{BVerbatim}
+Inductive ω := 
+  | subr : r → r → ω 
+  | disj : r → r → ω.
+Definition Ω := set ω.
+
+Reserved Notation " ω ∈* Ω " (at level 40).
+Inductive cclo (Ω : Ω) : ω → Prop := 
+  | trivial : ∀ ω, ω ∈ Ω → ω ∈* Ω
+  | sub_refl : ∀ r, subr r r ∈* Ω
+  | sub_trans : ∀ ri rj rk, subr ri rj ∈* Ω → subr rj rk ∈* Ω  → 
+                                  subr ri rk ∈* Ω 
+  | dis_sub : ∀ ri rj rk, subr ri rj ∈* Ω → disj rj rk ∈*  Ω → 
+                                  disj ri rk ∈* Ω
+  | dis_comm : ∀ ri rj, disj ri rj ∈* Ω → disj rj ri ∈* Ω 
+where " ω ∈* Ω " := (cclo Ω ω).
+
+Definition resp (M : M) (elem : Ω → ω → Prop) (Ω : Ω) :=
+  (∀ r1 r2, elem Ω (subr r1 r2) → lu r1 M ⊆ lu r2 M)
+                              ∧ 
+  (∀ r1 r2, elem Ω (disj r1 r2) → lu r1 M ∩ lu r2 M = [])
+.
+
+Notation " M ~ Ω " := (resp M (λ Ω ω, In ω Ω) Ω) (at level 40).
+Notation " M ~* Ω " := (resp M cclo Ω) (at level 40).
+\end{BVerbatim}
+\caption{Syntax for region relations}
+\label{regionrel}
+\end{figure*}
+
+One important property when proving correctness in Legion is to show that the
+relations are equivalent to their closure, with respect to what they imply
+about locations in those regions.  Figure~\ref{regionrelproof} for the
+statement of this proof. Intuitively, this means that if a region is a
+subregion of another region, and that region is a subregion of a third, then
+the first subregion is a subregion of the third. Disjointness is commutative, 
+and subregions of disjoint regions are disjoint.
+
+\begin{figure}
+\centering
+\begin{BVerbatim}
+Lemma resp_clos_sub : ∀ r1 r2 Ω (M:M), 
+  (∀ r1 r2, subr r1 r2 ∈ Ω → lu r1 M ⊆ lu r2 M) → 
+           subr r1 r2 ∈* Ω → lu r1 M ⊆ lu r2 M.
+...
+
+Lemma resp_clos : ∀ M Ω, M ~ Ω ↔ M ~* Ω.
+...
+\end{BVerbatim}
+\caption{Lemmas about region relations}
+\label{regionrelproof}
+\end{figure}
+
+TODO: Noah, if you want to put a rough description of your preservation proof 
+here feel free. Your type inference isn't loading for me.
+
+\section{Future Work}
+
+The work presented in this paper is a small fraction of a small fraction of the
+amount of work required to build a complete, correct-by-construction HPC
+application. In this section, we outline some of the possible paths towards
+this worthy goal. 
+
+As mentioned earlier in the paper, one of the keystones for large formally
+correct systems is modularity. This modularity has two purposes. On the one
+hand, it enables ease of implementation. This has long been recognized 
+in the field of software engineering \cite{?}. The second, analagous advantage,
+is that in a similar way modularity eases the burden of proofs. By defining 
+specifications as abstractions, one can separate concerns of proofs. For example,
+by composing a proof that a program's serial semantics comply with a formal
+specification with a proof that a parallel language respects those serial 
+semantics, we can get a proof that a parallel program respects the original
+formal semantics. In HPC, by applying this idea to parallel programming models like
+Legion, we can separate the application developer from having to prove 
+correctness with respect to one or more increasingly complex, heterogeneous
+architechures. Instead, we can provide an intermediate layer, like Legion, that
+allows application developers to reason and prove correctness to much 
+simpler operational semantics, and then prove that those semantics are retained
+even on the complex, heterogeneous architectures of todays supercomputers.
+
+Of course this is much easier said than done, and we address some of the challenges
+faced by such an effort in the following subsections.
+
+\subsection{Current Limitations}
+
+One common theme in formalizing systems is the discovery of issues in the
 corresponding informal specification. For example, when formalizing the C
 language for the CompCert project, Leroy et. al. found many cases where the
-specification was incomplete. Note that this is seperate notion from undefined
-behavior. Undefined behavior in a specification is well defined. A little bit
-like known unknowns vs. unknown unknowns, gaps in a specification can make it
-impossible to prove desired properties of a system.  
+informal specification was simply incomplete \cite{compcert}. Note that this is
+seperate notion from undefined behavior. Like unknown unknowns, gaps in a
+specification can make it impossible to prove desired properties of a system.
+In contrast, undefined behaviour is only a problem when programs exihibit it.
 
 In formalizing Legion, we discovered that while there is an impressive theory
-ensuring that the side effects of function calls running concurrently preserve
-serial semantics, there is no theory for what function calls can run
-concurrently based on value dependencies. For example, consider the infamous
-Fibonacci example, which naively computes the \texttt{n}'th Fibonacci number: 
+ensuring that the side effects of concurrent evaluations preserve serial
+semantics with respect to memory reads and writes, there is no theory for what
+expressions can be evaluated concurrently based on value dependencies. For
+example, if we define the program
+\begin{center}
+\begin{BVerbatim}
+Definition read_write x y t T r :=
+  elet x t (read (id y)) 
+    (write (new T r) (id x)).
+\end{BVerbatim}
+\end{center}
+then the semantics will happily order the \texttt{read} \emph{after} the
+\texttt{write}, despite the fact that the value being written, \texttt{x},
+generally will need to be read before being written. This isn't catastrophic
+for the semantics, as the returned value and resulting heap are equivalent, 
+as desired, but it limits the ability to reason effectively about concurrency. 
+In the actual implementations this is handled both dynamically with futures
+and statically with dependency analysis \cite{regent}.
 
-\begin{lstlisting}
-fib(n) = if n < 2 then 1 else fib(n-1) + fib(n-2)
-\end{lstlisting}
+Another issue with the semantics as they are now is that there is no way to 
+constrain ordering on side effects \emph{other than reads and writes into
+regions}. For example, generally programs will need to make system calls or
+foreign function calls in a particular order, and currently in the semantics
+there is no support for enforcing such an ordering.
+
+A third issue is that there is no way to dynamically create and destroy
+regions. In other words, it the semantics assumes static memory allocation.
+Of course, this differs from the actual implementation, and is an important,
+though difficult, semantics to formalize. As memory heirarchies get more 
+sophisticated, the need for tools for reasoning about memory use and locality
+becomes more essential. 
+
+A fourth challenge is that in practice, Legion is not a stand-alone language.
+Instead, it is embedded in an existing language. For the current implementations, 
+those languages are Regent and C/C++ \cite{regent, legion}. There are two 
+interesting paths towards addressing this issue. One would be to build a sort 
+of abstraction for languages that Legion is embedded in, and prove correctness
+with respect to that abstraction. This would likely be difficult to get right, as 
+capturing the important semantics of the languages that it would be embedded in
+would likely be a significant challenge. A second possibility for addressing this 
+issue would be choosing a particular semantics and focusing on that. In particular,
+combining the C API with the CompCert verified C work would likely be a
+fruitful, though challenging, venture. 
+
+All of these issues are addressable given enough time and effort. Some offer
+a nice opportunity for modularity within the tasking formalization. For example, 
+ordering tasks based on dependencies of values is common accross all tasking
+systems \cite{cilk, hpx}, and is likely a sort of sub-semantics that they could
+all share, reducing proof burden across different runtimes.
 
 \subsection{Performance}
 
-Returning to the "P" in "HPC", an important area of research is formal
-reasoning about performance. One of the challenges for Legion is that the
-scheduler has a non-trivial amount of work to do. Generally at least one core
-per node is dedicated entirely to runtime overheads. This is one area where
-Cilk, though fairly informally, shines. They prove a number of bounds on work
-that the scheduler has to do.  
+Returning to the "P" in "HPC", one important current area of research is formal
+reasoning about performance \cite{performance}. One of the challenges for
+Legion, and runtime systems in general, is that the scheduler often has a
+non-trivial amount of work to do, leading to large overheads. In Legion, the
+combination of reasoning about permissions, memory locality, etc., makes this
+overhead particularly hard to predict. 
+
+This is one oft-overlooked advantage to formal reasoning: it allows reasoning
+about \emph{any} property of a system, not just correctness. For example, there
+is the work by \cite{?} working towards formally verified complexity of code.
+Chlipala et. al. have also used techniques like those described here to construct
+and verify hardware description, where performance must be reasoned about down
+to single cycles \cite{chlipala}.  This is one area where other tasking
+systems, like Cilk, have a better story than Legion. Blumofe et al. informally
+describe bounds on runtime overheads, which has been realized in practice as
+low overheads in the actual runtime \cite{cilk}. 
 
 Ideally, we'd like to make similar claims about Legion runtime overheads.
-Currently, due to the complexity of the runtime implementation, this is
-infeasible. Like some of the desired correctness properties, a significant
-simplification of the runtime, and perhaps the semantics, would likely be
-required to achieve such a goal.
+Given a formal model of the work the runtime system has to do, one can reason
+about bounds on overhead. Currently, due to the complexity of the runtime
+implementation, this is infeasible. Like some of the desired correctness
+properties, a significant simplification of the runtime, and perhaps the
+semantics, would likely be required to achieve such a goal.
+
+
+\subsection{Other Tasking Systems}
+
+While we've focused on Legion, there are other parallel programming systems
+that offer exciting opportunities for formalization. While some (looking at
+you, OpenMP), are likely much to large and complex to formalize without
+herculean effort, others have simple enough semantics that formalization is
+likely within reach. One in particular that is attractive due to its simplicity
+is the recent work on parallel extensions to LLVM, the Tapir project
+\cite{tapir}. Building on existing formalization efforts for LLVM
+\cite{verillvm}, extending existing semantics with the Tapir instructions for
+concurrency should be viable. Again, there would be many challenges,
+particularly in the area of formal reasoning about memory models, but the
+approach should be viable.
+
+As mentioned earlier, there is also the important notion of \emph{shared
+semantics accross different tasking systems}. This notion of shared semantics
+presents a valuable opportunity for modularization of specification. By defining
+a shared semantics developers could reason more effectively, both formally and
+informally, about the semantics of their code with respect to tasking layers.
 
 \section{Conclusion}
 
 We hope to have convinced the reader of the importance and viability of proving
-software systems in HPC correct. While we've only taken small steps on the path
-to provably correct Legion, our hope is that it will inspire support for such 
-ventures by providing a convincing story on how to move forward. There is ever-
-increasing evidence that this class of deep specifications and certified software
-is an incredibly powerful tool for proving desirable properties about our large 
-software systems. We'd like to see more focus on correctness in HPC, and we think
-deep specifications and certified proofs are the way forward.
+parallel programming systems in HPC correct. While we've only taken small steps
+on the path to provably correct Legion, our hope is that it will inspire
+support for such ventures by providing a convincing story on how to move
+forward. There is ever- increasing evidence that this class of deep
+specifications and certified software is an incredibly powerful tool for
+proving desirable properties about our large software systems. We'd like to see
+more focus on correctness in HPC, and we think deep specifications and
+certified proofs are the way forward.
 
- \bibliographystyle{ACM-Reference-Format}
- \bibliography{annotated}
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{annotated}
+
 \end{document}

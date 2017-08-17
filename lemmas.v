@@ -22,9 +22,9 @@ Definition resp (M : M) (elem : Ω → ω → Prop) (Ω : Ω) :=
 Notation " M ~ Ω " := (resp M (λ Ω ω, In ω Ω) Ω) (at level 40).
 Notation " M ~* Ω " := (resp M cclo Ω) (at level 40).
 
-Lemma resp_clos_sub : ∀ r1 r2 Ω (M:M), (∀ r1 r2, subr r1 r2 ∈ Ω → lu r1 M ⊆ lu r2 M) → 
-                                                 subr r1 r2 ∈* Ω → 
-																								lu r1 M ⊆ lu r2 M.
+Lemma resp_clos_sub : ∀ r1 r2 Ω (M:M), 
+  (∀ r1 r2, subr r1 r2 ∈ Ω → lu r1 M ⊆ lu r2 M) → 
+           subr r1 r2 ∈* Ω → lu r1 M ⊆ lu r2 M.
 intros. prep_induction H0. induction H0; intros; subst. apply H0. assumption.
 inversion H2. subst. clear H2. apply subset_refl. inversion H2. subst. clear H2.
 specialize (IHcclo2 _ _ _ H eq_refl).  specialize (IHcclo1 _ _ _ H eq_refl).
