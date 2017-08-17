@@ -9,7 +9,7 @@ metavar termvar, x ::= {{ com term variable }}
 indexvar index, i, j, k, n, m, p  ::= {{ isa num }} {{ coq nat }} {{ hol num }}
 grammar
 
-T :: T_ ::=
+T :: T_ ::= {{ coq-equality decide equality. apply eq_value_name. }}
   | bool :: :: Num
   | int :: :: Va
   | < T1 , .. , Tn > :: :: Tuple
@@ -30,6 +30,8 @@ fns :: '' ::=
 |    mark_coherence ( E , M , taskid ) :: :: MarkCoherence {{coq (mark_coherence ([[E]]) ([[M]]) taskid) }}
 
 r :: r_ ::=
+| nullr :: :: Null
+| notnullr :: :: NotNull
 
 rr :: rr_ ::=
 | [ r1 , .. , rn ] :: :: Rlist
@@ -137,14 +139,14 @@ ee :: ee_ ::=
 
 id :: id_ ::=
 
-e :: E_ ::=
+e :: E_ ::= {{ coq-equality decide equality. apply eq_value_name. }}
   | x :: :: Va
   %| < e1 , .. , en > :: :: ETuple
   %| e iv :: :: Proj
   %| id :: :: Id
   | new T @ r :: :: New
   %{{ coq (new ([[T]])) }}
-  | null T @ r :: :: Null
+  | null T @ r :: :: NullFn
   | isnull ( e ) :: :: isNull
   %{{ coq (isnull ([[e]])) }}
   | upregion ( e , r1 , .. , rn ) :: :: UpRegion
@@ -332,7 +334,7 @@ formula :: formula_ ::=  {{ com formulas }}
   | regions_of ( G , T ) :: :: RegionsOf2
   | regions_of ( G , T1, T2 ) :: :: RegionsOf3
   | rs :: :: RegionsForm
-  | T :: :: TypeForm
+  | T :: :: TypeForm {{ coq [[T]] }}
   | fns :: :: Fns {{ coq [[fns]] }}
   | S :: :: Ss {{ coq [[S]] }}
   | C :: :: Cs {{ coq [[C]] }}
@@ -543,21 +545,31 @@ M,L,H,S',C |- e2 |-> v, E2 [[:prod2value]]
 M,L,H,S,C |- reduce(id,e1,e2) |-> l, E
 %++[reduceid(l,excl,v,0)]
 
-% l INS M(r) [[:meminmem]]
-%~(l INS domain(S)) [[:memindom]]
-%H(l) = M[[T]] [[:heapeqmemtype]]
------------------ :: New
-M,L,H,S,C |- new T@r |-> l, []
-
 ----------------- :: Null
 M,L,H,S,C |- null |-> null, []
 
+% l INS M(r) [[:meminmem]]
+%~(l INS domain(S)) [[:memindom]]
+%H(l) = M[[T]] [[:heapeqmemtype]]
+
+----------------- :: New
+M,L,H,S,C |- new T@r |-> l, []
+
+----------------- :: NullTrue
+M,L,H,S,C |- null T@nullr |-> true, []
+
+~(T@r = T@nullr)
+----------------- :: NullFalse
+M,L,H,S,C |- null T@r |-> false, []
+
 M,L,H,S,C |- e1 |-> l, E1 [[:prod1value]]
+
 l = null
 ----------------- :: IsNullTrue
 M,L,H,S,C |- isnull(l) |-> true, []
 
 M,L,H,S,C |- e1 |-> l, E1 [[:prod1value]]
+
 ~(l = null)
 ----------------- :: IsNullFalse
 M,L,H,S,C |- isnull(l) |-> false, []
@@ -662,24 +674,40 @@ Proof.
   rewrite H3.
   assumption.
 Qed.
+
 Theorem progress : forall (e5:e) (t:T) (M:M) (H:H) (S:Clobber) (C:C) (T:T),
     typing G_EmptyContext P_EmptyPriv O_EmptyConstraint e5 T  ->
-     exists v E L, eval M L H S C e5 v E.
+     exists E L v, eval M L H S C e5 v E.
 Proof.
   intros.
   destruct e5.
-  exists E_PlaceHolder.
   exists E_NullE.
   exists L_Nil.
+  exists E_PlaceHolder.
   apply EVa.
   reflexivity.
   reflexivity.
   reflexivity.
   (* are memory locations some or none? *)
-  exists (E_MemoryLoc ML_NilLoc).
   exists (E_NullE).
   exists L_Nil.
+  exists (E_MemoryLoc ML_NilLoc).
   apply ENew.
   reflexivity.
-
-}}
+  destruct r5.
+  exists (E_NullE).
+  exists L_Nil.
+  exists (E_Base1 bv_True).
+  apply ENullTrue.
+  reflexivity.
+  exists (E_NullE).
+  exists L_Nil.
+  exists (E_Base1 bv_False).
+  apply ENullFalse.
+  reflexivity.
+  contradiction.
+  repeat eexists.
+  destruct e5; try (inversion H1).
+  repeat eexists.
+  destruct l0; try (inversion H1).
+  }}
