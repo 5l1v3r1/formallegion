@@ -126,19 +126,34 @@ attractive property that it is guaranteed to preserve serial semantics for
 memory operations within logical regions. This allows programmers to avoid the
 burden of reasoning about the non-determinism that arises from concurrent
 computation. For this paper, we'll be formalizating work on from Triecher et.
-al \cite{ooplsa13} While there has been much work extending Legion since then,
-the core semantics has stayed relatively stable \cite{regent, deppart}.
+al \cite{ooplsa13}. While there has been much work extending Legion since then,
+the core semantics has stayed relatively stable \cite{regent, deppart}. 
 
+By partitioning regions into \emph{subregions}, and tracking \emph{privileges}, 
+Legion is able to ensure that certain code won't interfere or alias, and can
+therefor be safely, at least with respect to those memory regions, run in
+parallel. This theory has been put into practice to impressive effect, and has
+been shown to scale both within a node and between \cite{legionpapers}. That
+said, there are still challenges subtle bugs that occasionally show up in the
+implementation. It is possible that these kinds of bugs could manifest
+themselves in ways that would lead to incorrect conclusions when informing
+major decisions, something we'd generally like to avoid. One goal of this paper
+is to move towards formally and systematically removing \emph{all} bugs from
+the programming model, giving everyone who uses is far more certainty that 
+their code is correct.
+
+To move towards this goal, we turn to mechanized proof assistants.
 Improvements to proof assistants over recent decades have made them a powerful
 tool for implementing and reasoning about code. From provably correct compilers
 to provably correct operating systems, proof assistants enable extremely high
 certainty in correctness even for large scale software projects. 
 
-Coq is a dependently typed proof assistant. At its core is the Calculus of
-Inductive Constructions, a small dependently typed programming language and
-logic, capable of powerful abstractions for formal proofs. In the last 10 years 
-great strides have been made in using it to both build systems and prove useful
-properties about them \cite{compcert, certicoq, chlipala...}. 
+Coq, in particular, has proven itself to be a particularly potent dependently
+typed proof assistant. At its core is the Calculus of Inductive Constructions,
+a small dependently typed programming language and logic, capable of powerful
+abstractions for formal proofs \cite{cic}. In the last 10 years great strides
+have been made in using it to both build systems and prove useful properties
+about them \cite{compcert, certicoq, chlipala...}. 
 
 Specifications come in a wide range of formats. Many, like the OpenMP
 specification, are very informal, primarily consisting of english descriptions
@@ -153,9 +168,9 @@ over natural language specifications, there is still much room for improvement.
 specifications and proofs in computer science papers almost always have errors
 that can be caught by a formal proof.  This is not to say, of course, that
 formal specifications and proofs are infallible.  On the contrary, it is quite
-easy to get a specification wrong.  That said, often, if a there is a mistake
-in a spec , the process of proving it formally will expose that mistake,
-allowing for its correction. 
+easy to get a specification wrong. That said, often, if a there is a mistake in
+a spec , the process of proving it formally will expose that mistake, allowing
+for its correction.  
 
 \section{A Formal Specification of Legion}
 
@@ -171,9 +186,9 @@ correctness properties.
 One thing that makes Legion unique among high performance runtime systems is
 that it provides a specification of its operational semantics \cite{oopsla13}.
 We take this specification of and formalize it in Coq, enabling us to prove
-lemmas and theorems about it. See Figure~\ref{?} for the Coq implementation of
-the syntax, and Figure~\ref{semantics}and semantics. All code is available
-online at \texttt{https://github.com/lanl/formallegion}. 
+lemmas and theorems about it. See Figure~\ref{syntax} for the Coq
+implementation of the syntax, and Figure~\ref{semantics}and semantics. All code
+is available online at \texttt{https://github.com/lanl/formallegion}. 
 
 \begin{figure}
 \centering
@@ -207,7 +222,7 @@ Inductive e :=
 \label{syntax}
 \end{figure}
 
-The Legion semantics are defined as a small step operational semantics, which
+The Legion semantics are defined as a big step operational semantics, which
 result in non-deterministic orderings of memory reads and writes. By defining a
 notion of \texttt{valid\_interleaves}, we can reason formally about what evaluations 
 can happen concurrently. This should allow us to prove formally that if the
@@ -339,7 +354,18 @@ about locations in those regions.  Figure~\ref{regionrelproof} for the
 statement of this proof. Intuitively, this means that if a region is a
 subregion of another region, and that region is a subregion of a third, then
 the first subregion is a subregion of the third. Disjointness is commutative, 
-and subregions of disjoint regions are disjoint.
+and subregions of disjoint regions are disjoint. We've left out the Coq tactic
+proofs for space, as they are likely less informative to the reader than the
+propositions and definitions, but they can be found online as linked above. 
+Lemma \texttt{resp\_clos\_sub} proves that given that if a subregion relation
+holds with respect to a mapping \texttt{M} and a set of region constraints
+\textOmega{Ω} for all regions \texttt{r1, r2} then holds for the closure of that
+set of region constraints under that mapping. Given \texttt{resp\_clos\_sub}, 
+Lemma \texttt{resp\_clos} proves that this implies that a mapping respects
+a set of region constraints if and onlyo if it respects the closure of that
+set. This non-trivial property is crucial for proving that the final decisions 
+made by the tasking system based on the sets of constraints preserves 
+serial semantics. 
 
 \begin{figure}
 \centering
