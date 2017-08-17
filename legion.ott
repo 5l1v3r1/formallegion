@@ -586,7 +586,7 @@ M,L,H,S,C |- downregion(e,r1,..,rn) |-> l, E
 M,L,H,S,C |- e |-> v, E [[:prodvalue]]
 % ~(l INS M(ri)) [[:meminri]]
 ------------------------------------------------- :: DnRgn2
-M,L,H,S,C |- downregion(e,r1,..,rn) |-> null, E
+M,L,H,S,C |- downregion(e,r1,..,rn) |-> nullr, E
 
 M,L,H,S,C |- e1 |-> l, E1 [[:prod1value]]
 % S' = apply(S,E1) [[:apply1]]
@@ -653,6 +653,8 @@ embed {{ coq
 Notation "G , P , O |- e : T ":= (typing G P O e T) (no associativity, at level 99). 
 Notation "M , L , H , S , C |- e |-> v , E" := (eval M L H S C e v E) (no associativity, at level 99).
 
+(* need theorem to prove that all top level e there is a typing rule *)
+
 Theorem preservation : forall (e5:e) (t:T) (E:E) (M:M) (L:L) (H:H) (S:Clobber) (C:C) (T:T),
     exists v,
       eval M L H S C e5 v E ->
@@ -680,7 +682,7 @@ Theorem progress : forall (e5:e) (t:T) (M:M) (H:H) (S:Clobber) (C:C) (T:T),
      exists E L v, eval M L H S C e5 v E.
 Proof.
   intros.
-  destruct e5.
+  induction e5.
   exists E_NullE.
   exists L_Nil.
   exists E_PlaceHolder.
@@ -708,6 +710,142 @@ Proof.
   contradiction.
   repeat eexists.
   destruct e5; try (inversion H1).
+  eexists.
+  eexists.
+  eexists.
+  apply EUpRgn.
+
+  destruct IHe5.
+  inversion H1.
+  (* need the lemma here *)
+  admit.
+  destruct H2.
+  destruct H2.
+  admit.
+  instantiate (1:=L_Nil).
+  reflexivity.
+  inversion H1.
+  assumption.
+  instantiate (1:=E_PlaceHolder).
+  reflexivity.
+  instantiate (1:=E_NullE).
+  reflexivity.
   repeat eexists.
-  destruct l0; try (inversion H1).
+  apply EDnRgn2 with (v5:=E_NullLoc).
+  inversion H1.
+  destruct IHe5.
+  rewrite <- H8.
+  rewrite <- H3.
+  admit.
+  inversion H10.
+  inversion H11.
+  admit.
+  instantiate (1:=L_Nil).
+  reflexivity.
+  instantiate (1:=E_NullE).
+  reflexivity.
+  simpl; reflexivity.
+  repeat eexists.
+  apply ERead1 with (l5:=ML_NilLoc).
+  inversion H1.
+  (* needs to fix the type *)
+  admit.
+  admit.
+  inversion H1.
+  auto.
+  instantiate (1:=E_PlaceHolder).
+  reflexivity.
+  instantiate (1:=E_NullE).
+  reflexivity.
+  (* FIXME: make permissions self evaluate (or get them out of expressions) *)
+  admit.
+  repeat eexists.
+  (* FIXME: need to add reade *)
+  admit.
+  exists (E_NullE).
+  exists L_Nil.
+  exists (E_MemoryLoc ML_NilLoc).
+  apply EWrite with (E1:=E_NullE) (Clobber':=C_Null) (v5:=(E_MemoryLoc ML_NilLoc)) (E2:=E_NullE).
+  inversion H1.
+  destruct IHe5_1.
+  rewrite <- H9.
+  assumption.
+  admit.
+  admit.
+  reflexivity.
+  admit.
+  admit.
+  reflexivity.
+  reflexivity.
+  reflexivity.
+  reflexivity.
+  repeat eexists.
+  apply EReduce with (E1:=E_NullE) (Clobber':=C_Null) (v5:=(E_MemoryLoc ML_NilLoc)) (E2:=E_NullE).
+  destruct IHe5_1.
+  inversion H1.
+  assumption.
+  inversion H2.
+  inversion H3.
+  (* FIXME: get the inversion of the types working *)
+  admit.
+  admit.
+  instantiate (1:=L_Nil).
+  reflexivity.
+  admit.
+  admit.
+  instantiate (1:=E_NullE).
+  reflexivity.
+  reflexivity.
+  reflexivity.
+  reflexivity.
+  exists (E_NullE).
+  exists L_Nil.
+  exists (E_MemoryLoc ML_NilLoc).
+  (* FIXME: add a rule for Reduceid or fix the constructor *)
+  admit.
+  exists (E_NullE).
+  exists L_Nil.
+  exists (E_MemoryLoc ML_NilLoc).
+  (* FIXME: need NewColor *)
+  admit.
+  exists (E_NullE).
+  exists L_Nil.
+  exists (E_MemoryLoc ML_NilLoc).
+  (* FIXME: fix rule for Color *)
+  admit.
+  (* FIXME: add rules for IntOp *)
+  admit.
+  (* FIXME: add rules for Comp *)
+  admit.
+  (* FIXME: add rules for Let *)
+  admit.
+(* FIXME: add rules for If *)
+  admit.
+  exists (E_NullE).
+  exists L_Nil.
+  exists (E_MemoryLoc ML_NilLoc).
+  apply ECall.
+  reflexivity.
+  reflexivity.
+  reflexivity.
+  (* FIXME: add FuncCall *)
+  admit.
+  exists (E_NullE).
+  exists L_Nil.
+  exists (E_MemoryLoc ML_NilLoc).
+  (* FIXME: why does this have a let in the function? *)
+  admit.
+  repeat eexists.
+  (* FIXME: need to make this match its definition so it unifies *)
+  admit.
+  repeat eexists.
+  (* FIXME: need to make this match its definition so it unifies *)
+  admit.
+  repeat eexists.
+  (* FIXME: add FuncDef *)
+  admit.
+  (* FIXME: add FuncDefList *)
+  admit.
+  (* FIXME: All of these need to go except for self evaluation *)
+Admitted.
   }}
