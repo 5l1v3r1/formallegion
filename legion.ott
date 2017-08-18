@@ -95,6 +95,7 @@ H :: H_ ::=
 | H ( l ) :: :: Hl
 
 S {{ coq Clobber }} :: S_ ::=
+| nullc :: :: Null 
 
 C :: C_ ::=
 
@@ -593,8 +594,7 @@ M,L,H,S'',C |- e3 |-> v, E3 [[:prod3value]]
 % K' = {(l,v)} UNION {(li,vi)}
 %valid_interleave(S,C,E',E1,E2) [[:validinterleave]]
 ------------------------------------------------- :: Color
-M,L,H,S,C |- write(e1,e2) |-> l, E
-%++[read(l,excl,v,0)] 
+M,L,H,S,C |- color(e1,e2,e3) |-> K', E'
 
 M,L,H,S,C |- e1 |-> K, E1 [[:prod1value]]
 % { rhoi ,
@@ -746,188 +746,352 @@ Proof.
   assumption.
 Qed.
 
-
-
-Theorem progress : forall (e5:e) (t:T) (M:M) (H:H) (S:Clobber) (C:C) (T:T),
-    typing G_EmptyContext P_EmptyPriv O_EmptyConstraint e5 T  ->
-     exists E L v, eval M L H S C e5 v E.
+Theorem progress : forall (e5:e) (t:T) (M:M) (H:H) (S:Clobber) (C:C) (T1 T2:T),
+     exists E L v,
+     typing G_EmptyContext P_EmptyPriv O_EmptyConstraint e5 T1  ->
+       typing G_EmptyContext P_EmptyPriv O_EmptyConstraint v T2  ->
+       eval M L H S C e5 v E.
 Proof.
   intros.
   induction e5.
+  - (* Va *)
+  (*  eexists. *)
   exists E_NullE.
   exists L_Nil.
   exists E_PlaceHolder.
+  intros.
   apply EVa.
   reflexivity.
   reflexivity.
   reflexivity.
   (* are memory locations some or none? *)
+  - (* New *)
+   (* eexists. *)
   exists (E_NullE).
   exists L_Nil.
   exists (E_MemoryLoc ML_NilLoc).
+  intros.
   apply ENew.
   reflexivity.
-  destruct r5.
-  exists (E_NullE).
-  exists L_Nil.
-  exists (E_Base1 bv_True).
-  apply ENullTrue.
-  reflexivity.
-  exists (E_NullE).
-  exists L_Nil.
-  exists (E_Base1 bv_False).
-  apply ENullFalse.
-  reflexivity.
-  contradiction.
-  repeat eexists.
-  destruct e5; try (inversion H1).
-  eexists.
-  eexists.
-  eexists.
-  apply EUpRgn.
+  - (* NullFn *)
+    destruct r5.
+    * (* NullFn True *)
+      (* eexists. *)
 
-  destruct IHe5.
-  inversion H1.
-  (* need the lemma here *)
-  admit.
-  destruct H2.
-  destruct H2.
-  admit.
-  instantiate (1:=L_Nil).
-  reflexivity.
-  inversion H1.
-  assumption.
-  instantiate (1:=E_PlaceHolder).
-  reflexivity.
-  instantiate (1:=E_NullE).
-  reflexivity.
-  repeat eexists.
-  apply EDnRgn2 with (v5:=E_NullLoc).
-  inversion H1.
-  destruct IHe5.
-  rewrite <- H8.
-  rewrite <- H3.
-  admit.
-  inversion H10.
-  inversion H11.
-  admit.
-  instantiate (1:=L_Nil).
-  reflexivity.
-  inversion H1.
-  assumption.
-  instantiate (1:=E_NullE).
-  reflexivity.
-  reflexivity.
-  -
+      exists (E_NullE).
+      exists L_Nil.
+      exists (E_Base1 bv_True).
+      intros.
+      apply ENullTrue.
+      reflexivity.
+
+    *   (* NullFn False *)
+      (* eexists. *)
+      exists (E_NullE).
+      exists L_Nil.
+      exists (E_Base1 bv_False).
+      intros.
+      apply ENullFalse.
+      reflexivity.
+      contradiction.
+  - (* IsNull *)
+    repeat eexists.
+    intros.
+    destruct e5; try (inversion H1).
+  - (* UpRgn *)
     exists (E_NullE).
-  exists L_Nil.
-  exists (E_MemoryLoc ML_NilLoc).
-
-  apply ERead1 with (l5:=ML_NilLoc).
-  inversion H1.
-  destruct IHe5.
-  (* so this *)
-   dk repeat eexists.
-  (* needs to fix the type *)
-  admit.
-  admit.
-  inversion H1.
-  auto.
-  instantiate (1:=E_PlaceHolder).
-  reflexivity.
-  instantiate (1:=E_NullE).
-  reflexivity.
-  (* FIXME: make permissions self evaluate (or get them out of expressions) *)
-  admit.
-  repeat eexists.
-  (* FIXME: need to add reade *)
-  admit.
-  exists (E_NullE).
-  exists L_Nil.
-  exists (E_MemoryLoc ML_NilLoc).
-  apply EWrite with (E1:=E_NullE) (Clobber':=C_Null) (v5:=(E_MemoryLoc ML_NilLoc)) (E2:=E_NullE).
-  inversion H1.
-  destruct IHe5_1.
-  rewrite <- H9.
-  assumption.
-  admit.
-  admit.
-  reflexivity.
-  admit.
-  admit.
-  reflexivity.
-  reflexivity.
-  reflexivity.
-  reflexivity.
-  repeat eexists.
-  apply EReduce with (E1:=E_NullE) (Clobber':=C_Null) (v5:=(E_MemoryLoc ML_NilLoc)) (E2:=E_NullE).
-  destruct IHe5_1.
-  inversion H1.
-  assumption.
-  inversion H2.
-  inversion H3.
-  (* FIXME: get the inversion of the types working *)
-  admit.
-  admit.
-  instantiate (1:=L_Nil).
-  reflexivity.
-  admit.
-  admit.
-  instantiate (1:=E_NullE).
-  reflexivity.
-  reflexivity.
-  reflexivity.
-  reflexivity.
-  exists (E_NullE).
-  exists L_Nil.
-  exists (E_MemoryLoc ML_NilLoc).
-  (* FIXME: add a rule for Reduceid or fix the constructor *)
-  admit.
-  exists (E_NullE).
-  exists L_Nil.
-  exists (E_MemoryLoc ML_NilLoc).
-  (* FIXME: need NewColor *)
-  admit.
-  exists (E_NullE).
-  exists L_Nil.
-  exists (E_MemoryLoc ML_NilLoc).
-  (* FIXME: fix rule for Color *)
-  admit.
-  (* FIXME: add rules for IntOp *)
-  admit.
-  (* FIXME: add rules for Comp *)
-  admit.
-  (* FIXME: add rules for Let *)
-  admit.
-(* FIXME: add rules for If *)
-  admit.
-  exists (E_NullE).
-  exists L_Nil.
-  exists (E_MemoryLoc ML_NilLoc).
-  apply ECall.
-  reflexivity.
-  reflexivity.
-  reflexivity.
-  (* FIXME: add FuncCall *)
-  admit.
-  exists (E_NullE).
-  exists L_Nil.
-  exists (E_MemoryLoc ML_NilLoc).
-  (* FIXME: why does this have a let in the function? *)
-  admit.
-  repeat eexists.
-  (* FIXME: need to make this match its definition so it unifies *)
-  admit.
-  repeat eexists.
-  (* FIXME: need to make this match its definition so it unifies *)
-  admit.
-  repeat eexists.
-  (* FIXME: add FuncDef *)
-  admit.
-  (* FIXME: add FuncDefList *)
-  admit.
-  (* FIXME: All of these need to go except for self evaluation *)
+    exists L_Nil.
+    exists (E_MemoryLoc ML_NilLoc).
+    intros.
+    apply EUpRgn.
+    inversion H2.
+    reflexivity.
+    inversion H2.
+    reflexivity.
+    reflexivity.
+  - (* DnRgn *)
+    exists (E_NullE).
+    exists L_Nil.
+    exists (E_MemoryLoc ML_NilLoc).
+    intros.
+    inversion H2.
+  - (* Read *)
+    exists (E_NullE).
+    exists L_Nil.
+    repeat eexists.
+    intros.
+    (* how would I prove this in real life? should just work with rule2. *)
+    (* the problem is that the inductive hypothesis is messed up *)
+    apply ERead2.
+    (* so we are proving that it always returns a memory location *)
+    (* the inductive hypothesis should be that anything that typechecks for read
+       so anything that any expression that can evaluate.
+       Anything that doesn't type will contradict (If I do this right)
+     *)
+    destruct e5; inversion H2.
+    reflexivity.
+    inversion H2.
+    reflexivity.
+    (* FIXME: unimplemented *)
+  - (* ReadE *) 
+    admit.
+  - (* Write *) 
+    exists (E_NullE).
+    exists L_Nil.
+    repeat eexists.
+    intros.
+    apply EWrite with (E1:=E_NullE) (Clobber':=C_Null) (v5:=(E_MemoryLoc ML_NilLoc)) (E2:=E_NullE).
+    destruct e5_1; inversion H2.
+    destruct e5_2; inversion H2.
+    reflexivity.
+    inversion H2.
+    inversion H2.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+  - (* Reduce *)
+    exists (E_NullE).
+    exists L_Nil.
+    repeat eexists.
+    intros.
+    apply EReduce with (E1:=E_NullE) (Clobber':=C_Null) (v5:=(E_MemoryLoc ML_NilLoc)) (E2:=E_NullE).
+    destruct e5_1; inversion H2.
+    destruct e5_2; inversion H2.
+    reflexivity.
+    inversion H2.
+    inversion H2.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    (* FIXME: unimplemented *)
+  - (* Reduceid *)
+    admit.
+    (* FIXME: unimplemented *)
+  - (* NewColor *)
+    admit.
+    (* FIXME: wrong command unimplemented *)
+  - (* Color *) 
+    exists (E_NullE).
+    exists L_Nil.
+    repeat eexists.
+    intros.
+    admit.
+  - (* IntOp *)
+    exists (E_NullE).
+    exists L_Nil.
+    exists E_PlaceHolder.
+    intros.
+    apply EIntOp with  (E1:=E_NullE) (E2:=E_NullE) (v1:=E_PlaceHolder) (v2:=E_PlaceHolder).
+    inversion H1.
+    inversion H1.
+    (* TODO: fill out IntOp *)
+    admit.
+    reflexivity.
+    inversion H1.
+    inversion H1.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+  - (* Comp *)
+    exists (E_NullE).
+    exists L_Nil.
+    exists E_PlaceHolder.
+    intros.
+    apply EComp with  (E1:=E_NullE) (E2:=E_NullE) (v1:=E_PlaceHolder) (v2:=E_PlaceHolder).
+    inversion H1.
+    inversion H1.
+    (* TODO: fill out IntOp *)
+    admit.
+    reflexivity.
+    inversion H1.
+    inversion H1.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+  - (* Let *)
+    exists (E_NullE).
+    exists L_Nil.
+    exists E_PlaceHolder.
+    intros.
+    apply ELet with  (E1:=E_NullE) (E2:=E_NullE) (L':=L_Nil) (v1:=E_PlaceHolder) (v2:=E_PlaceHolder).
+    destruct e5_1; inversion H1.
+    destruct e5_1; inversion H2.
+    reflexivity.
+    inversion H1.
+    inversion H1.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    (* TODO: fill out substition *)
+    admit.
+  - (* If *)
+    exists (E_NullE).
+    exists L_Nil.
+    exists E_PlaceHolder.
+    intros.
+    destruct e5_1; inversion H1.
+  - (* Call *)
+    exists (E_NullE).
+    exists L_Nil.
+    exists E_PlaceHolder.
+    intros.
+    inversion H2.
+  - (* Partition *)
+     exists (E_NullE).
+    exists L_Nil.
+    exists E_PlaceHolder.
+    intros.
+    (* TODO: Get this unifying *)
+    admit.
+  - (* Pack *)
+    exists (E_NullE).
+    exists L_Nil.
+    exists E_PlaceHolder.
+    intros.
+    (* TODO: Get this unifying *)
+    admit.
+  - (* Unpack *)
+    exists (E_NullE).
+    exists L_Nil.
+    exists E_PlaceHolder.
+    intros.
+    (* TODO: Get this unifying *)
+    admit.
+  - (* FuncDef *)
+    exists (E_NullE).
+    exists L_Nil.
+    exists E_PlaceHolder.
+    intros.
+    apply EFuncDef with (L':=L_Nil).
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    (* TODO: do the list *)
+    (* TODO: do the environment *)
+    admit.
+    admit.
+  - (* FundDefList *)
+    exists (E_NullE).
+    exists L_Nil.
+    exists E_PlaceHolder.
+    intros.
+    apply EFuncDefList.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    (* TODO: do the list *)
+    admit.
+  - (* TypedExpr *)
+    exists (E_NullE).
+    exists L_Nil.
+    exists E_PlaceHolder.
+    intros.
+    apply ETypedExpr.
+    reflexivity.
+    inversion H1.
+    reflexivity.
+    reflexivity.
+    destruct e5; inversion H2.
+  - (* PlaceHolder *)
+    (* TODO: remove when no longer necessary *)
+    admit.
+  - (* BoolVal *)
+    exists (E_NullE).
+    exists L_Nil.
+    exists E_PlaceHolder.
+    intros.
+    destruct bv5; inversion H1.
+  - (* IntVal *)
+    exists (E_NullE).
+    exists L_Nil.
+    exists E_PlaceHolder.
+    intros.
+    destruct iv5; inversion H1.
+  -  (* Tuple *)
+    exists (E_NullE).
+    exists L_Nil.
+    eexists.
+    intros.
+    apply ETuple.
+    reflexivity.
+    inversion H1.
+    inversion H1.
+    reflexivity.
+  - (* NullLoc *)
+    exists (E_NullE).
+    exists L_Nil.
+    eexists.
+    intros.
+    inversion H1.
+  - (* MemoryLoc *)
+    exists (E_NullE).
+    exists L_Nil.
+    eexists.
+    intros.
+    inversion H1.
+  - (* RegRelInst *)
+    exists (E_NullE).
+    exists L_Nil.
+    eexists.
+    intros.
+    inversion H1.
+  - (* HeapVal *)
+    exists (E_NullE).
+    exists L_Nil.
+    eexists.
+    intros.
+    inversion H1.
+    (* TODO: Understand this and name it correctly *)
+  - (* Kthing *)
+    exists (E_NullE).
+    exists L_Nil.
+    eexists.
+    intros.
+    inversion H1.
+  - (* True *)
+    exists (E_NullE).
+    exists L_Nil.
+    eexists.
+    intros.
+    inversion H1.
+  - (* False *)
+    exists (E_NullE).
+    exists L_Nil.
+    eexists.
+    intros.
+    inversion H1.
+  - (* Zero *)
+    exists (E_NullE).
+    exists L_Nil.
+    eexists.
+    intros.
+    inversion H1.
+  - (* Succ *)
+    exists (E_NullE).
+    exists L_Nil.
+    eexists.
+    intros.
+    inversion H1.
 Admitted.
-  
-}}
 
+}}
