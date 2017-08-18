@@ -87,7 +87,7 @@ M :: M_ ::=
 L :: L_ ::=
 | nil :: :: Nil
 | L [ ( e1 , v1 ) , .. , ( en , vn ) ]  :: :: LMapping
-| L [ v / id ] :: :: LRepl
+| L [ e / id ] :: :: LRepl
 
 K :: K_ ::=
 
@@ -117,7 +117,7 @@ v :: v_ ::=
 %| { ( l1 , iv ) , .. , ( ln , iv ) } :: :: Coloring
 | < < rho1 , .. , rhon , v  > > :: :: RegRelInst
 %| S  :: :: Sthing
-| H :: :: Hthing
+| H :: :: HeapVal
 %{{ coq [[H]]}}
 | K :: :: Kthing
 %{{ coq [[K]]}}
@@ -139,6 +139,8 @@ ee :: ee_ ::=
 
 id :: id_ ::=
 
+excl :: excl_ ::=
+
 e :: E_ ::= {{ coq-equality decide equality. apply eq_value_name. }}
   | x :: :: Va
   %| < e1 , .. , en > :: :: ETuple
@@ -155,7 +157,6 @@ e :: E_ ::= {{ coq-equality decide equality. apply eq_value_name. }}
   %{{ coq (downregion [[e]] [[r1 .. rn]] )}}
   | read ( e ) :: :: Read
   %{{coq (read ([[e]]))}}
-  | excl :: :: Perms
   | read ( e1 , excl , e2 , e3 ) :: :: ReadE
   % {{ coq (reade ([[e1]]) excl ([[e2]]) ([[e3]]))}}
   | write ( e1 , e2 ) :: :: Write
@@ -171,7 +172,7 @@ e :: E_ ::= {{ coq-equality decide equality. apply eq_value_name. }}
   | e1 + e2 :: :: IntOp
   | e1 lt e2 :: :: Comp
   | let id : T =  e1 in e2 :: :: Let
-  | if b then c0 else c1         ::  :: If         {{ com conditional }}
+  | if e1 then e2 else e3         ::  :: If         {{ com conditional }}
   | id [ r1 , .. , rn ] ( e1 , .. , em ) :: :: FuncCall
   % {{ coq (fncall ([[id]]) ([[r1 .. rn]]) ([[e1 .. em]]))}}
   | partition rp using e1 as r1 , .. , rn in e2 :: :: Part
@@ -185,7 +186,7 @@ e :: E_ ::= {{ coq-equality decide equality. apply eq_value_name. }}
   % {{ coq (fnlist ([[id1 rr1 ee1 .. idn rrn een]])) }}
   % | v :: :: Value
   % {{ coq [[v]] }}
-  | L :: :: Ls
+  %| L :: :: Ls
   % {{ coq [[L]] }}
   % interesting how am I going to feed the context to the type here?
   | e : T :: :: TypedExpr
@@ -202,7 +203,7 @@ e :: E_ ::= {{ coq-equality decide equality. apply eq_value_name. }}
 % {{ coq [[l]]}}
   | < < rho1 , .. , rhon , v  > > :: :: RegRelInst
 %| S  :: :: Sthing
-  | H :: :: Hthing
+  | H :: :: HeapVal
 %{{ coq [[H]]}}
   | K :: :: Kthing
 %{{ coq [[K]]}}
@@ -264,7 +265,6 @@ formula :: formula_ ::=  {{ com formulas }}
            {{ com exists $[[formula1]]$ and $[[formula2]]$ where $[[formula3]]$ }}
            {{ tex \exists_[[formula1]]. [[formula2]] \text{ where } [[formula3]] }}
            {{ coq               exists [[formula1]], [[formula2]] }}
-
    | G ( id ) :: :: Lookup
            {{ com lookup }}
            {{ tex \[[G]]([[id]]) }}
@@ -339,7 +339,8 @@ formula :: formula_ ::=  {{ com formulas }}
   | S :: :: Ss {{ coq [[S]] }}
   | C :: :: Cs {{ coq [[C]] }}
   | M :: :: Ms {{ coq [[M]] }}
-  | v :: :: Vs {{ coq [[v]] }}
+  | e :: :: Exprs {{ coq [[e]] }}
+  % | v :: :: Vs {{ coq [[v]] }}
   | E :: :: Es {{ coq [[E]] }}
   | L :: :: Ls {{ coq [[L]] }}
   | </ ei = li // i IN n      /> :: :: ListComp
@@ -507,9 +508,6 @@ M , L , H , S , C |- e |-> v , E  :: :: eval :: E {{ com Evaluation }} by
 ------ :: Va
 M,L,H,S,C |- x |-> v, E
 
-%------ :: Va
-%M,L,H,S,C |- e iv  |-> v, E
-
 % M == r to rho mappings
 % L == locals
 % H == heaps and types
@@ -563,13 +561,11 @@ M,L,H,S,C |- null T@nullr |-> true, []
 M,L,H,S,C |- null T@r |-> false, []
 
 M,L,H,S,C |- e1 |-> l, E1 [[:prod1value]]
-
 l = null
 ----------------- :: IsNullTrue
 M,L,H,S,C |- isnull(l) |-> true, []
 
 M,L,H,S,C |- e1 |-> l, E1 [[:prod1value]]
-
 ~(l = null)
 ----------------- :: IsNullFalse
 M,L,H,S,C |- isnull(l) |-> false, []
@@ -586,7 +582,7 @@ M,L,H,S,C |- downregion(e,r1,..,rn) |-> l, E
 M,L,H,S,C |- e |-> v, E [[:prodvalue]]
 % ~(l INS M(ri)) [[:meminri]]
 ------------------------------------------------- :: DnRgn2
-M,L,H,S,C |- downregion(e,r1,..,rn) |-> nullr, E
+M,L,H,S,C |- downregion(e,r1,..,rn) |-> null, E
 
 M,L,H,S,C |- e1 |-> l, E1 [[:prod1value]]
 % S' = apply(S,E1) [[:apply1]]
@@ -634,20 +630,93 @@ M,L,H,S,C |- unpack e1 as id:T1[r1,..,rk] in e2 |-> v2, E'
 %+1
 %M' = M[rho1/r1,..,rhok/rk] [[:memreplace]]
 % fixme
-%L'=L[(a1,v1),..,(an,vn)]
-%L'=L[(e1,v1),..,(en,vn)] [[:memreplace]]
+L'=L[(e1,v1),..,(en,vn)] [[:memreplace]]
 % S'=apply(S,E') [[:apply]]
 %</ ei = li // i IN m      />  
 %C' = C UNION {l: EX rho. l IN rho /\ (atomic(rho) IN M'[[Q']] \/ simult(rho) IN M'[[Q']])}
 %M',L',H,S',C' |- en+1 |-> vn+1, En+1
 %M',L',H,S',C' |- en |-> vn, En [[:nthvalue]]
 %En+1'=mark_coherence(En+1,M'[[Q']],taskid)
-%E'=mark_coherence(E,M'[[Q']],i) [[:makecoherence]]
-%i = taskid fresh [[:freshid]]
-%valid_interleave(S,C,E',E1,E2) [[:validinterleave]]
+% E'=mark_coherence(E,M'[[Q']],i) [[:makecoherence]]
+x = taskid fresh [[:freshid]]
+valid_interleave(S,C,E',E1,E2) [[:validinterleave]]
 ------------------------------------------------- ::  Call
 M,L,H,S,C |- id[r1,..,rk](e1,..,en) |-> vn, E''
 %M,L,H,S,C |- id[r1,..,rk](e1,..,en) |-> vn+1, E''
+
+
+M,L,H,S,C |- e1 |-> v1,E1 [[:prod1value]]
+M,L,H,S,C |- e2 |-> v2,E2 [[:prod2value]]
+v = v1+v2 [[:result]]
+------------------------------------------------- :: IntOp 
+M,L,H,S,C |- e1+e2 |-> v, E
+
+M,L,H,S,C |- e1 |-> v1,E1 [[:prod1value]]
+M,L,H,S,C |- e2 |-> v2,E2 [[:prod2value]]
+v = v1 lt v2 [[:result]]
+------------------------------------------------- :: Comp 
+M,L,H,S,C |- e1 lt e2 |-> v, E
+
+% need to have a way of doing let bindings 
+M,L,H,S,C |- e1 |-> v1,E1 [[:prod1value]]
+% 
+M,L,H,S,C |- e2 |-> v2,E2 [[:prod2value]]
+L'=L[v1/id]
+------------------------------------------------- :: Let 
+M,L,H,S,C |- let id : T = e1 in e2 |-> v, E
+
+
+M,L,H,S,C |- e1 |-> true,E1 [[:prod1value]]
+M,L,H,S,C |- e2 |-> v,E1 [[:prod1value]]
+------------------------------------------------- :: IfTrue
+M,L,H,S,C |- if e1 then e2 else e3 |-> v, E
+
+M,L,H,S,C |- e1 |-> false,E1 [[:prod1value]]
+M,L,H,S,C |- e3 |-> v,E2 [[:prod2value]]
+------------------------------------------------- :: IfFalse
+M,L,H,S,C |- if e1 then e2 else e3 |-> v, E
+
+% so you need to need to use it to add to the definitions.
+% so what does a function def need to evaluate?
+L'=L[ id[ r1 , .. , rn ]( e1 , .. , em )/id]
+------------------------------------------------- :: FuncDef
+M,L,H,S,C |- function id [ r1 , .. , rn ] ( e1 , .. , em ) |-> v, E
+
+% need to make this work.
+------------------------------------------------- :: FuncDefList
+M,L,H,S,C |-  { function id1 rr1 ee1 , .. , function idn rrn een } |-> v, E
+
+% constants
+M,L,H,S,C |- e |-> v, E
+-------------------------- :: TypedExpr
+M,L,H,S,C |- e : T |-> v, E
+
+-------------------- :: Place
+M,L,H,S,C |- place |-> place, E
+
+----------------------- :: bv 
+M,L,H,S,C |- bv |-> bv, E
+
+---------------------- :: iv 
+M,L,H,S,C |- iv |-> iv, E
+
+--------------------- :: Tuple
+M,L,H,S,C |- <v1,v2> |-> <v1,v2>, E
+
+------------------ :: NullLoc
+M,L,H,S,C |- null |-> null, E
+
+------------------ :: MemoryLoc
+M,L,H,S,C |- l |-> l, E
+
+---------------------- :: RegRelInst
+M,L,H,S,C |-  <<rho1,..,rhon,v>> |->  <<rho1,..,rhon,v>>, E
+
+---------------- :: HeapVal
+M,L,H,S,C |- H |-> H, E
+
+---------------- :: Kthing
+M,L,H,S,C |- K |-> K, E
 
 embed {{ coq
 Notation "G , P , O |- e : T ":= (typing G P O e T) (no associativity, at level 99). 
@@ -676,6 +745,8 @@ Proof.
   rewrite H3.
   assumption.
 Qed.
+
+
 
 Theorem progress : forall (e5:e) (t:T) (M:M) (H:H) (S:Clobber) (C:C) (T:T),
     typing G_EmptyContext P_EmptyPriv O_EmptyConstraint e5 T  ->
@@ -742,12 +813,21 @@ Proof.
   admit.
   instantiate (1:=L_Nil).
   reflexivity.
+  inversion H1.
+  assumption.
   instantiate (1:=E_NullE).
   reflexivity.
-  simpl; reflexivity.
-  repeat eexists.
+  reflexivity.
+  -
+    exists (E_NullE).
+  exists L_Nil.
+  exists (E_MemoryLoc ML_NilLoc).
+
   apply ERead1 with (l5:=ML_NilLoc).
   inversion H1.
+  destruct IHe5.
+  (* so this *)
+   dk repeat eexists.
   (* needs to fix the type *)
   admit.
   admit.
@@ -848,4 +928,6 @@ Proof.
   admit.
   (* FIXME: All of these need to go except for self evaluation *)
 Admitted.
-  }}
+  
+}}
+
