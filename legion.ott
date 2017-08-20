@@ -82,6 +82,7 @@ q :: q_ ::=
 | simult ( r ) :: :: Simultaneous
 
 M :: M_ ::=
+| nullm :: :: Null
 | M [[ Q ]] :: :: Qexpr
 
 L :: L_ ::=
@@ -90,6 +91,7 @@ L :: L_ ::=
 | L [ e / id ] :: :: LRepl
 
 K :: K_ ::=
+| nullk :: :: Null
 
 H :: H_ ::=
 | H ( l ) :: :: Hl
@@ -171,7 +173,9 @@ e :: E_ ::= {{ coq-equality decide equality. apply eq_value_name. }}
   | color ( e1 , e2 , e3 ) :: :: Color
   %{{ coq (color ([[e1]]) ([[e2]])) }}
   | e1 + e2 :: :: IntOp
+  %{{ coq IntOp [[e1]] [[e2]] }}
   | e1 lt e2 :: :: Comp
+  %{{ coq Comp [[e1]] [[e2]] }}
   | let id : T =  e1 in e2 :: :: Let
   | if e1 then e2 else e3         ::  :: If         {{ com conditional }}
   | id [ r1 , .. , rn ] ( e1 , .. , em ) :: :: FuncCall
@@ -398,6 +402,9 @@ Definition pack (_:e) (_:T) := E_PlaceHolder.
 Definition unpack (_:e)  (_:id) (_:T) (_:e) := E_PlaceHolder.
 Definition fncall (_:id) (_:list_r) (_:list_e) := E_PlaceHolder.
 Definition fnlist (_:list_id_rr_ee) := E_PlaceHolder.
+(* FIXME: make this type correctly *)
+Definition IntOp (_ _:e) := E_PlaceHolder.
+Definition Comp (_ _:e) := E_PlaceHolder.
 }}
 
 subrules
@@ -463,7 +470,8 @@ G,P,O |- partition rp using e1 as r1,..,rk in e2: T
 % O1[r1/r1',..,rk/rk'] SUB O' [[:renamedsub]]
 G,P,O |- e1 : T2[r1/r1',..,rk/rk'] [[:type1checks]]
 ----------------- :: Pack
-G,P,O |- pack e1 as T1[r1,..,rk]:T1
+G,P,O |- pack e1 as T1:T1
+%G,P,O |- pack e1 as T1[r1,..,rk]:T1
 
 % T1 = exists r1',..,rk'.T2 where O
 % Is this necessary?
@@ -474,7 +482,8 @@ G,P,O |- e1 : T1 [[:type1checks]]
 G',P,O' |- e2 : T3 [[:type2checks]]
 %({r1,..,rk} INTR regions_of(G,T1,T3)) = emptyR [[:allregionsempty]]jjj
 ----------------- :: UnPack
-G,P,O |- unpack e1 as id: T1[r1,..,rk] in e2:T3
+G,P,O |- unpack e1 as id: T1 in e2:T3
+%G,P,O |- unpack e1 as id: T1[r1,..,rk] in e2:T3
 
 %{(e1:T1),..,(en:Tn)}
 % G,P',Q' -> T [[:impl]]
@@ -528,6 +537,13 @@ M,L,H,S,C |- e |-> l, E [[:prodvalue]]
 M,L,H,S,C |- read(e) |-> H(l), E
 %++[read(l,excl,v,0)] 
 
+M,L,H,S,C |- e1 |-> l, E [[:prodvalue]]
+M,L,H,S,C |- e2 |-> l, E [[:prodvalue]]
+M,L,H,S,C |- e3 |-> l, E [[:prodvalue]]
+% S' = apply(S,E) [[:apply]]
+------------------------------------------------- :: ReadE
+M,L,H,S,C |- read(e1, excl, e2, e3) |-> v, E
+
 M,L,H,S,C |- e1 |-> l, E1 [[:prod1value]]
 % S' = apply(S,E1) [[:apply]]
 M,L,H,S',C |- e2 |-> v, E2 [[:prod2value]]
@@ -543,6 +559,15 @@ M,L,H,S',C |- e2 |-> v, E2 [[:prod2value]]
 ------------------------------------------------- :: Reduce
 M,L,H,S,C |- reduce(id,e1,e2) |-> l, E
 %++[reduceid(l,excl,v,0)]
+
+M,L,H,S,C |- l |-> v1, E1 [[:prod1value]]
+% S' = apply(S,E1) [[:apply]]
+M,L,H,S',C |- e1 |-> v2, E2 [[:prod2value]]
+M,L,H,S',C |- e2 |-> v3, E3 [[:prod3value]]
+M,L,H,S',C |- e3 |-> v4, E3 [[:prod3value]]
+%valid_interleave(S,C,E',E1,E2) [[:validinterleave]]
+------------------------------------------------- :: ReduceId
+M,L,H,S,C |- reduceid(l,e1,e2,e3) |-> v, E
 
 ----------------- :: Null
 M,L,H,S,C |- null |-> null, []
@@ -596,9 +621,13 @@ M,L,H,S'',C |- e3 |-> v, E3 [[:prod3value]]
 ------------------------------------------------- :: Color
 M,L,H,S,C |- color(e1,e2,e3) |-> K', E'
 
+
+----------------- :: NewColor
+M,L,H,S,C |- newcolor r |-> K,[]
+
 M,L,H,S,C |- e1 |-> K, E1 [[:prod1value]]
 % { rhoi ,
-M' = M[rho1/r1,..,rhok/rk] [[:memreplace]]
+%M' = M[rho1/r1,..,rhok/rk] [[:memreplace]]
 % S' = apply(S,E1) [[:apply]]
 M,L,H,S',C |- e2 |-> v, E2 [[:prod2value]]
 %valid_interleave(S,C,E',E1,E2) [[:validinterleave]]
@@ -609,16 +638,18 @@ M,L,H,S,C |- e1 |-> K, E1 [[:prod1value]]
 % { rhoi ,
 % v' = <<rho1,..,rhok,v>> [[:valismem]]
 ------------------------------------------------- :: Pack
-M,L,H,S,C |- pack e1 as T1[r1,..,rk] |-> v', E
+M,L,H,S,C |- pack e1 as T1 |-> v', E
+%M,L,H,S,C |- pack e1 as T1[r1,..,rk] |-> v', E
 
 M,L,H,S,C |- e1 |-> <<rho1,..,rhok,v>>,E1 [[:prod1memval]]
-M' = M[rho1/r1,..,rhok/rk]  [[:memreplace]]
+%M' = M[rho1/r1,..,rhok/rk]  [[:memreplace]]
 L'=L[v1/id] [[:lreplace]]
 % S'=apply(S,E1) [[:apply]]
 M',L',H,S',C |- e2 |-> v, E2 [[:prod2value]]
 %valid_interleave(S,C,E',E1,E2) [[:validinterleave]]
 ------------------------------------------------- :: Unpack
-M,L,H,S,C |- unpack e1 as id:T1[r1,..,rk] in e2 |-> v2, E'
+M,L,H,S,C |- unpack e1 as id:T1 in e2 |-> v2, E'
+%M,L,H,S,C |- unpack e1 as id:T1[r1,..,rk] in e2 |-> v2, E'
 
 
 %M,L,H,S,C |- e1 |-> v1,E1 [[:prod1value]]
@@ -638,8 +669,8 @@ L'=L[(e1,v1),..,(en,vn)] [[:memreplace]]
 %M',L',H,S',C' |- en |-> vn, En [[:nthvalue]]
 %En+1'=mark_coherence(En+1,M'[[Q']],taskid)
 % E'=mark_coherence(E,M'[[Q']],i) [[:makecoherence]]
-x = taskid fresh [[:freshid]]
-valid_interleave(S,C,E',E1,E2) [[:validinterleave]]
+%x = taskid fresh [[:freshid]]
+% valid_interleave(S,C,E',E1,E2) [[:validinterleave]]
 ------------------------------------------------- ::  Call
 M,L,H,S,C |- id[r1,..,rk](e1,..,en) |-> vn, E''
 %M,L,H,S,C |- id[r1,..,rk](e1,..,en) |-> vn+1, E''
@@ -647,13 +678,13 @@ M,L,H,S,C |- id[r1,..,rk](e1,..,en) |-> vn, E''
 
 M,L,H,S,C |- e1 |-> v1,E1 [[:prod1value]]
 M,L,H,S,C |- e2 |-> v2,E2 [[:prod2value]]
-v = v1+v2 [[:result]]
+%v = v1+v2  [[:result]]  {{ coq [[v]] = (IntOp [[v1]] [[v2]]) }}
 ------------------------------------------------- :: IntOp 
 M,L,H,S,C |- e1+e2 |-> v, E
 
 M,L,H,S,C |- e1 |-> v1,E1 [[:prod1value]]
 M,L,H,S,C |- e2 |-> v2,E2 [[:prod2value]]
-v = v1 lt v2 [[:result]]
+%v = v1 lt v2 [[:result]]
 ------------------------------------------------- :: Comp 
 M,L,H,S,C |- e1 lt e2 |-> v, E
 
@@ -746,6 +777,7 @@ Proof.
   assumption.
 Qed.
 
+
 Theorem progress : forall (e5:e) (t:T) (M:M) (H:H) (S:Clobber) (C:C) (T1 T2:T),
      exists E L v,
      typing G_EmptyContext P_EmptyPriv O_EmptyConstraint e5 T1  ->
@@ -833,14 +865,27 @@ Proof.
     inversion H2.
     reflexivity.
     (* FIXME: unimplemented *)
-  - (* ReadE *) 
-    admit.
+  - (* ReadE *)
+    exists (E_NullE).
+    exists L_Nil.
+    exists E_PlaceHolder.
+    intros.
+    apply EReadE with (l5:=ML_NilLoc).
+    inversion H1.
+    inversion H1.
+    inversion H1.
+    reflexivity.
+    inversion H1.
+    inversion H1.
+    inversion H1.
+    reflexivity.
+    reflexivity.
   - (* Write *) 
     exists (E_NullE).
     exists L_Nil.
     repeat eexists.
     intros.
-    apply EWrite with (E1:=E_NullE) (Clobber':=C_Null) (v5:=(E_MemoryLoc ML_NilLoc)) (E2:=E_NullE).
+    apply EWrite with (E1:=E_NullE) (Clobber':=S_Null) (v5:=(E_MemoryLoc ML_NilLoc)) (E2:=E_NullE).
     destruct e5_1; inversion H2.
     destruct e5_2; inversion H2.
     reflexivity.
@@ -855,7 +900,7 @@ Proof.
     exists L_Nil.
     repeat eexists.
     intros.
-    apply EReduce with (E1:=E_NullE) (Clobber':=C_Null) (v5:=(E_MemoryLoc ML_NilLoc)) (E2:=E_NullE).
+    apply EReduce with (E1:=E_NullE) (Clobber':=S_Null) (v5:=(E_MemoryLoc ML_NilLoc)) (E2:=E_NullE).
     destruct e5_1; inversion H2.
     destruct e5_2; inversion H2.
     reflexivity.
@@ -865,19 +910,56 @@ Proof.
     reflexivity.
     reflexivity.
     reflexivity.
-    (* FIXME: unimplemented *)
   - (* Reduceid *)
-    admit.
-    (* FIXME: unimplemented *)
+    exists (E_NullE).
+    exists L_Nil.
+    exists E_PlaceHolder.
+    repeat eexists.
+    intros.
+    apply EReduceId with (E1:=E_NullE) (Clobber':=S_Null) (v1:=(E_MemoryLoc ML_NilLoc)) (v2:=(E_MemoryLoc ML_NilLoc)) (v3:=(E_MemoryLoc ML_NilLoc)) (v4:=(E_MemoryLoc ML_NilLoc)) (E2:=E_NullE) (E3:=E_NullE).
+    inversion H1.
+    inversion H1.
+    inversion H1.
+    inversion H1.
+    reflexivity.
+    inversion H1.
+    inversion H1.
+    inversion H1.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
   - (* NewColor *)
-    admit.
-    (* FIXME: wrong command unimplemented *)
+    exists (E_NullE).
+    exists L_Nil.
+    Variable x0:K.
+    exists (E_Kthing x0).
+    intros.
+    apply ENewColor.
+    reflexivity.
   - (* Color *) 
     exists (E_NullE).
     exists L_Nil.
-    repeat eexists.
+    exists (E_Kthing x0).
     intros.
-    admit.
+    apply EColor with (E1:=E_NullE) (Clobber':=S_Null)  (Clobber'':=S_Null) (l5:=ML_NilLoc) (v5:=(E_MemoryLoc ML_NilLoc)) (E2:=E_NullE) (E3:=E_NullE).
+    destruct e5_1; inversion H2.
+    destruct e5_2; inversion H2.
+    destruct e5_3; inversion H2.
+    reflexivity.
+    destruct e5_1; inversion H2.
+    destruct e5_2; inversion H2.
+    destruct e5_3; inversion H2.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
   - (* IntOp *)
     exists (E_NullE).
     exists L_Nil.
@@ -887,13 +969,9 @@ Proof.
     inversion H1.
     inversion H1.
     (* TODO: fill out IntOp *)
-    admit.
     reflexivity.
     inversion H1.
     inversion H1.
-    reflexivity.
-    reflexivity.
-    reflexivity.
     reflexivity.
     reflexivity.
     reflexivity.
@@ -908,14 +986,10 @@ Proof.
     apply EComp with  (E1:=E_NullE) (E2:=E_NullE) (v1:=E_PlaceHolder) (v2:=E_PlaceHolder).
     inversion H1.
     inversion H1.
-    (* TODO: fill out IntOp *)
-    admit.
+    (* TODO: fill out Comp *)
     reflexivity.
     inversion H1.
     inversion H1.
-    reflexivity.
-    reflexivity.
-    reflexivity.
     reflexivity.
     reflexivity.
     reflexivity.
@@ -941,8 +1015,8 @@ Proof.
     reflexivity.
     reflexivity.
     reflexivity.
-    (* TODO: fill out substition *)
-    admit.
+  (* TODO: fill out substition *)
+    destruct id5; inversion H1.
   - (* If *)
     exists (E_NullE).
     exists L_Nil.
@@ -958,24 +1032,58 @@ Proof.
   - (* Partition *)
      exists (E_NullE).
     exists L_Nil.
-    exists E_PlaceHolder.
+    exists (E_MemoryLoc ML_NilLoc).
     intros.
     (* TODO: Get this unifying *)
-    admit.
+    apply EPartition with (E1:=E_NullE) (Clobber':=S_Null) (v5:=(E_MemoryLoc ML_NilLoc)) (E2:=E_NullE) (K5:=K_Null) (p:=0).
+    inversion H1.
+    destruct e5_1; inversion H2.
+    destruct e5_2; inversion H2.
+    induction l0.
+    simpl.
+    inversion H2.
+    simpl.
+    inversion H2.
+    (reflexivity || inversion H2).
+    (reflexivity || inversion H2).
+    (reflexivity || inversion H2).
+    (reflexivity || inversion H2).
+    (reflexivity || inversion H2).
+    (reflexivity || inversion H2).
+    (reflexivity || inversion H2).
   - (* Pack *)
     exists (E_NullE).
     exists L_Nil.
     exists E_PlaceHolder.
     intros.
-    (* TODO: Get this unifying *)
-    admit.
+    apply EPack with (E1:=E_NullE) (K5:=K_Null).
+    Variable xl : list_r.
+    apply xl.
+    destruct e5; inversion H2.
+    (reflexivity || inversion H2).
+    (reflexivity || inversion H2).
+    (reflexivity || inversion H2).
+    (reflexivity || inversion H2).
+    (reflexivity || inversion H2).
   - (* Unpack *)
     exists (E_NullE).
     exists L_Nil.
     exists E_PlaceHolder.
     intros.
-    (* TODO: Get this unifying *)
-    admit.
+    apply EUnpack with (r_rho_list:=Nil_list_r_rho) (v_5:=E_PlaceHolder) (E1:=E_NullE) (E2:=E_NullE)  (Clobber':=S_Null) (L':=L_Nil) (v1:=E_PlaceHolder) (M':=M_Nil).
+    (reflexivity || inversion H2).
+    (reflexivity || inversion H2).
+    (reflexivity || inversion H2).
+    (reflexivity || inversion H2).
+    (reflexivity || inversion H2).
+    (reflexivity || inversion H2).
+    (reflexivity || inversion H2).
+    (reflexivity || inversion H2).
+    (reflexivity || inversion H2).
+    (reflexivity || inversion H2).
+    (reflexivity || inversion H2).
+    (reflexivity || inversion H2).
+    (reflexivity || inversion H2).
   - (* FuncDef *)
     exists (E_NullE).
     exists L_Nil.
@@ -986,10 +1094,16 @@ Proof.
     reflexivity.
     reflexivity.
     reflexivity.
-    (* TODO: do the list *)
-    (* TODO: do the environment *)
-    admit.
-    admit.
+    (* TODO: list assumption needs cleanup *)
+    induction l1.
+    simpl.
+    apply Forall_nil.
+    apply Forall_cons.
+    inversion H2.
+    apply IHl1.
+    inversion H1.
+    (* TODO: really do the environment *)
+    destruct id5; inversion H1.
   - (* FundDefList *)
     exists (E_NullE).
     exists L_Nil.
@@ -999,8 +1113,13 @@ Proof.
     reflexivity.
     reflexivity.
     reflexivity.
-    (* TODO: do the list *)
-    admit.
+    induction l0.
+    simpl.
+    apply Forall_nil.
+    apply Forall_cons.
+    inversion H2.
+    apply IHl0.
+    inversion H2.
   - (* TypedExpr *)
     exists (E_NullE).
     exists L_Nil.
@@ -1014,7 +1133,11 @@ Proof.
     destruct e5; inversion H2.
   - (* PlaceHolder *)
     (* TODO: remove when no longer necessary *)
-    admit.
+    exists (E_NullE).
+    exists L_Nil.
+    exists E_PlaceHolder.
+    intros.
+    inversion H1.
   - (* BoolVal *)
     exists (E_NullE).
     exists L_Nil.
@@ -1092,6 +1215,25 @@ Proof.
     eexists.
     intros.
     inversion H1.
-Admitted.
-
+    Variable x1:E.
+    Variable x2:L.
+    Variable x3:e.
+    Variable x4:l.
+    Unshelve.
+    repeat solve [(apply x1 || apply x2 || apply x3 || apply x4)].
+    repeat solve [(apply x1 || apply x2 || apply x3 || apply x4)].
+    repeat solve [(apply x1 || apply x2 || apply x3 || apply x4)].
+    repeat solve [(apply x1 || apply x2 || apply x3 || apply x4)].
+    repeat solve [(apply x1 || apply x2 || apply x3 || apply x4)].
+    repeat solve [(apply x1 || apply x2 || apply x3 || apply x4)].
+    repeat solve [(apply x1 || apply x2 || apply x3 || apply x4)].
+    repeat solve [(apply x1 || apply x2 || apply x3 || apply x4)].
+    repeat solve [(apply x1 || apply x2 || apply x3 || apply x4)].
+    repeat solve [(apply x1 || apply x2 || apply x3 || apply x4)].
+    repeat solve [(apply x1 || apply x2 || apply x3 || apply x4)].
+    repeat solve [(apply x1 || apply x2 || apply x3 || apply x4)].
+    repeat solve [(apply x1 || apply x2 || apply x3 || apply x4)].
+    repeat solve [(apply x1 || apply x2 || apply x3 || apply x4)].
+    repeat solve [(apply x1 || apply x2 || apply x3 || apply x4)].
+Qed.
 }}
