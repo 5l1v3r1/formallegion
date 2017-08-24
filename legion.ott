@@ -1,5 +1,17 @@
+% contributions:
+%  full proof of definitional equality.
+%  full specification of core legion.
+%  proofs of progress and preservation
+
+%embed {{ tex
+%\newcommand\doubleplus{+\kern-1.3ex+\kern0.8ex}
+%\newcommand\mdoubleplus{\ensuremath{\mathbin{+\mkern-10mu+}}}
+%}}
+
 embed {{ coq
 Require Import Nat.
+Require Import ListSet.
+Import ListNotations.
 }}
 
 metavar termvar, x ::= {{ com term variable }}
@@ -9,107 +21,96 @@ metavar termvar, x ::= {{ com term variable }}
 indexvar index, i, j, k, n, m, p  ::= {{ isa num }} {{ coq nat }} {{ hol num }}
 grammar
 
-T :: T_ ::= {{ coq-equality decide equality. apply eq_value_name. }}
-  | bool :: :: Num
-  | int :: :: Va
-  | < T1 , .. , Tn > :: :: Tuple
-  | T @ r :: :: PointerOne
-  | T @ ( r1 , .. , rn ) :: :: Pointer
-  | T [ r1 , .. , rn ] :: :: TypeList
-  | T [ r1 / r1' , .. , rn / rn' ] :: :: TypeRepl
-  | coloring ( r ) :: :: RegionColoring
-  | exists r1 , .. , rn . ( T1 , .. , Tm ) , P , Q -> Tr ::  :: Functions
-
-fresh :: ti_ ::=
-| iv :: :: TaskNum {{ coq [[iv]] }}
-
-fns :: '' ::=
-|    apply ( S , E ) :: :: apply
-|    valid_interleave ( S , C , E1 , .. , En ) :: :: valid_interleave
-|    taskid fresh :: :: taskid
-|    mark_coherence ( E , M , taskid ) :: :: MarkCoherence {{coq (mark_coherence ([[E]]) ([[M]]) taskid) }}
-
-r :: r_ ::=
+r :: r_ ::= {{ coq-equality }}
 | nullr :: :: Null
 | notnullr :: :: NotNull
 
-rr :: rr_ ::=
+rr :: rr_ ::= {{ coq-equality }}
 | [ r1 , .. , rn ] :: :: Rlist
 
-l :: ML_ ::=
+l :: ML_ ::= {{ coq-equality }}
 | nil :: :: NilLoc
 
-G {{ tex \Gamma }} :: G_ ::=
+C :: C_ ::=
+%| e1 , .. , en :: :: CList
+
+G {{ tex \Gamma }} :: G_ ::= {{ coq-equality }}
 | { ( e1 : T1 ) , .. , ( en : Tn ) } :: :: Context
 | emptyC :: :: EmptyContext
 
-O {{ tex \Omega }} {{ coq Omega }} :: O_ ::=
+O {{ tex \Omega }} {{ coq Omega }} :: O_ ::= {{ coq-equality }}
 | { om1 , .. , omn } :: :: RegionConstraint
 | emptyO :: :: EmptyConstraint
 
-Ost {{ tex \Omega^* }} :: Ost_ ::=
+Ost {{ tex \Omega^* }} :: Ost_ ::= {{ coq-equality }}
 | { om1 , .. , omn } :: :: RegionConstraintSt
 | emptyOst :: :: EmptyConstraintSt
 
-rs :: O_ ::=
+rs :: O_ ::= {{ coq-equality }}
 | { r1 , .. , rn } :: :: Regions
 | emptyR :: :: EmptyRegion
 
 
-om {{ tex \omega }} :: o_ ::=
+om {{ tex \omega }} :: o_ ::= {{ coq-equality }}
 | r1 <= r2 :: :: Subregion
 | r1 * r2 :: :: Disjointness
 
-P {{ tex \Phi }} :: P_ ::=
+P {{ tex \Phi }} :: P_ ::= {{ coq-equality }} 
 | { phi1 , .. , phin } :: :: Priv
 | emptyP :: :: EmptyPriv
 
-Pst {{ tex \Phi^* }} :: Pst_ ::=
+Pst {{ tex \Phi^* }} :: Pst_ ::= {{ coq-equality }} 
 | { phi1 , .. , phin } :: :: PrivSt
 | emptyPst :: :: EmptyPrivSt
 
 
-phi {{ tex \phi }} :: p_ ::=
+phi {{ tex \phi }} :: p_ ::= {{ coq-equality }} 
 | reads ( r )  :: :: Reads {{coq (reads [[r]])}}
 | writes ( r ) :: :: Writes {{coq (writes [[r]])}}
 | reducesid ( r ) :: :: Reduces {{coq (reduces [[r]])}}
 
-Q :: Q_ ::=
+Q :: Q_ ::= {{ coq-equality }} 
 | { q1 , .. , qn } :: :: CoherenceModes
 
-q :: q_ ::=
+q :: q_ ::= {{ coq-equality }} 
 | atomic ( r ) :: :: Atomic
 | simult ( r ) :: :: Simultaneous
 
-M :: M_ ::=
+M :: M_ ::= {{ coq-equality }} 
 | nullm :: :: Null
 | M [[ Q ]] :: :: Qexpr
 
-L :: L_ ::=
+L :: L_ ::= {{ coq-equality }} 
 | nil :: :: Nil
 | L [ ( e1 , v1 ) , .. , ( en , vn ) ]  :: :: LMapping
 | L [ e / id ] :: :: LRepl
 
-K :: K_ ::=
+K :: K_ ::= {{ coq-equality }}  
 | nullk :: :: Null
 
-H :: H_ ::=
+H :: H_ ::= {{ coq-equality }}
 | H ( l ) :: :: Hl
 
-S {{ coq Clobber }} :: S_ ::=
+S {{ coq Clobber }} :: S_ ::= {{ coq-equality }}
 | nullc :: :: Null 
 
-C :: C_ ::=
+ 
+%C :: C_ ::=
+%| nullcc :: :: Null
 
-E :: E_ ::=
+emem :: em_ ::= {{ coq-equality }}
+| read ( e1 , excl , e2 , e3 ) :: :: ReadE
+| write ( e1 , excl , e2 , e3 ) :: :: WriteE 
+| reduceid ( e1 , excl , e2 , e3 ) :: :: ReduceIdE
+
+E :: E_ ::= {{ coq-equality }}
 | [ ] :: :: NullE
-| [ e ] :: :: exp
-| E ++ [ e ] :: :: Append {{ coq (E_Append [[E]] [[e]]) }}
+| E ++ [ emem ] :: :: Append {{ coq ([[E]]) ++ ([[emem]]) }}
 
 rho {{ tex \rho }} :: rho_ ::=
 
 
-v :: v_ ::=
+v :: v_ ::= {{ coq-equality }}
 | bv :: :: Base1 {{ coq [[bv]] }}
 | iv :: :: Base2 {{ coq [[iv]] }}
 | < v1 , v2 > :: :: Tuple
@@ -127,24 +128,47 @@ v :: v_ ::=
   | place :: :: PlaceHolder
 
 
-bv :: bv_ ::=
+bv :: bv_ ::= {{ coq-equality }}
+
   | true                         ::   :: True       {{ com constant true }}
   | false                         ::   :: False      {{ com constant false }}
 
-iv :: iv_ ::=
-| 0 :: :: Zero
+iv :: iv_ ::= {{ coq-equality }}
+%| 0 :: :: Zero
 %{{ coq O}}
-| S iv :: ::  Succ
+%| S iv :: ::  Succ
 %{{ coq Datatypes.S [[iv]]}}
 
-ee :: ee_ ::=
+fresh :: ti_ ::= {{ coq-equality }}
+| iv :: :: TaskNum {{ coq [[iv]] }}
+
+
+ee :: ee_ ::=  {{ coq-equality }}
 | ( e1 , .. , en ) :: :: Elist
 
-id :: id_ ::=
+id :: id_ ::=  {{ coq-equality }}
 
-excl :: excl_ ::=
+T :: T_ ::= {{ coq-equality }}
+%{{ coq-equality decide equality. apply eq_value_name. }}
+  | bool :: :: Num
+  | int :: :: Va
+  | < T1 , .. , Tn > :: :: Tuple
+  | T @ r :: :: PointerOne
+  | T @ ( r1 , .. , rn ) :: :: Pointer
+  | T [ r1 , .. , rn ] :: :: TypeList
+  | T [ r1 / r1' , .. , rn / rn' ] :: :: TypeRepl
+  | coloring ( r ) :: :: RegionColoring
+  | exists r1 , .. , rn . ( T1 , .. , Tm ) , P , Q -> Tr ::  :: Functions
 
-e :: E_ ::= {{ coq-equality decide equality. apply eq_value_name. }}
+fns :: '' ::= {{ coq-equality }}
+|    apply ( S , E ) :: :: apply
+|    valid_interleave ( S , C , E1 , .. , En ) :: :: valid_interleave
+|    taskid fresh :: :: taskid
+|    mark_coherence ( E , M , taskid ) :: :: MarkCoherence {{coq (mark_coherence ([[E]]) ([[M]]) taskid) }}
+
+excl :: excl_ ::= {{ coq-equality }}
+
+e :: E_ ::= {{ coq-equality }}
   | x :: :: Va
   %| < e1 , .. , en > :: :: ETuple
   %| e iv :: :: Proj
@@ -160,7 +184,6 @@ e :: E_ ::= {{ coq-equality decide equality. apply eq_value_name. }}
   %{{ coq (downregion [[e]] [[r1 .. rn]] )}}
   | read ( e ) :: :: Read
   %{{coq (read ([[e]]))}}
-  | read ( e1 , excl , e2 , e3 ) :: :: ReadE
   % {{ coq (reade ([[e1]]) excl ([[e2]]) ([[e3]]))}}
   | write ( e1 , e2 ) :: :: Write
   % {{ coq (write ([[e1]]) ([[e2]])) }}
@@ -225,7 +248,7 @@ formula :: formula_ ::=  {{ com formulas }}
    |  ~ formula                     :: M :: not
           {{ com negated formula }}
           {{ tex \neg [[formula]] }}
-          {{ coq ~([[formula]]) }}
+          {{ coq (not ([[formula]])) }}
    |  ( formula )                     :: M :: brackets
           {{ com bracketed }}
           {{ tex \left([[formula]]\right) }} {{ isa ([[formula]]) }}
@@ -270,6 +293,10 @@ formula :: formula_ ::=  {{ com formulas }}
            {{ com exists $[[formula1]]$ and $[[formula2]]$ where $[[formula3]]$ }}
            {{ tex \exists_[[formula1]]. [[formula2]] \text{ where } [[formula3]] }}
            {{ coq               exists [[formula1]], [[formula2]] }}
+   | formula1 INSI formula2 :: :: SetMember
+           {{ com $[[formula1]]$ is in $[[formula2]]$ }}
+           {{ tex [[formula1]] \in [[formula2]] }}
+           {{ coq In [[formula1]] [[formula2]] }}
    | G ( id ) :: :: Lookup
            {{ com lookup }}
            {{ tex \[[G]]([[id]]) }}
@@ -289,7 +316,7 @@ formula :: formula_ ::=  {{ com formulas }}
    | formula1 INTR formula2 :: M :: Intersect
           % {{ com intersection of [[formula1]] [[formula2]] }}
            {{ tex [[formula1]] \cap [[formula2]] }}
-           {{ coq Intersection ([[formula1]]) ([[formula2]]) }}
+           {{ coq set_inter ([[formula1]]) ([[formula2]]) }}
    | formula1 UNION formula2 :: M :: Union
           % {{ com union of [[formula1]] [[formula2]] }}
            {{ tex [[formula1]] \cup [[formula2]] }}
@@ -382,6 +409,7 @@ terminals :: terminals_ ::=
   | state                      ::   :: sigma          {{ tex \sigma }}
   | G                          ::   :: Gamma          {{ tex \Gamma }}
   | E                          ::   :: varepsilon        {{ tex \varepsilon }}
+%  | ++                         ::   :: append            {{ tex \doubleplus }}
 
 embed {{ coq
 Definition reads (_:e) := E_PlaceHolder.
@@ -405,10 +433,282 @@ Definition fnlist (_:list_id_rr_ee) := E_PlaceHolder.
 (* FIXME: make this type correctly *)
 Definition IntOp (_ _:e) := E_PlaceHolder.
 Definition Comp (_ _:e) := E_PlaceHolder.
+
+(* how to do the substitution? *)
+Fixpoint apply_mem (S:Clobber) E : Clobber :=
+match S,rev E with
+| S', [] => S'
+| S', (em_ReadE _ _ _ _)::E' => apply_mem S' E'
+| S', (em_WriteE l _ v _)::E' => (apply_mem S' E')  (* [v/l] *)
+| S', (em_ReduceIdE l _ v _) :: E' => let S' := apply_mem S E' in
+                                    S' (* S'[id(S'(l),v)/l]  *)
+end.
+
+(* what is mark coherence doing here? *) 
+Fixpoint mark_coherence l Q taskid :=
+match l,Q with
+| [],Q' => []
+| [op(l,c,v,t)]++E,Q' =>
+  let c' =
+      if rho == simult then
+         simult
+      else if rho == atomic then
+           atomic
+      else
+           excl
+  in
+   [op(l,c',v,taskid)]++mark_coherence(E,Q') 
+end.
+
+mark coherence([], Q', taskid) = []
+mark coherence([op(l, c, v, t)]++E, Q', taskid) = [op(l, c0, v, taskid)]++mark coherence(E, Q'),
+
+
 }}
 
 subrules
   v <:: e
+
+embed {{ coq
+Lemma eq_r: forall (x y : r), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_r : ott_coq_equality.
+
+Lemma eq_list_r: forall (x y : list_r), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith. 
+Defined.
+Hint Resolve eq_list_r : ott_coq_equality.
+
+Lemma eq_rr: forall (x y : rr), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith. 
+Defined.
+Hint Resolve eq_rr : ott_coq_equality.
+
+Lemma eq_l: forall (x y : l), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_l : ott_coq_equality.
+
+Lemma eq_om: forall (x y : om), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_om : ott_coq_equality.
+
+Lemma eq_list_om: forall (x y : list_om), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_list_om : ott_coq_equality.
+
+
+Lemma eq_Omega: forall (x y : Omega), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_Omega : ott_coq_equality.
+
+Lemma eq_Ost: forall (x y : Ost), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_Ost : ott_coq_equality.
+
+Lemma eq_rs: forall (x y : rs), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_rs : ott_coq_equality.
+
+Lemma eq_phi: forall (x y : phi), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_phi : ott_coq_equality.
+
+Lemma eq_list_phi: forall (x y : list_phi), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_list_phi : ott_coq_equality.
+
+Lemma eq_P: forall (x y : P), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_P : ott_coq_equality.
+
+Lemma eq_Pst: forall (x y : Pst), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_Pst : ott_coq_equality.
+
+Lemma eq_q: forall (x y : q), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_q : ott_coq_equality.
+
+Lemma eq_list_q: forall (x y : list_q), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_list_q : ott_coq_equality.
+
+Lemma eq_Q: forall (x y : Q), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_Q : ott_coq_equality.
+
+Lemma eq_M: forall (x y : M), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_M : ott_coq_equality.
+
+
+Lemma eq_K: forall (x y : K), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_K : ott_coq_equality.
+
+Lemma eq_H: forall (x y : H), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_H : ott_coq_equality.
+
+Lemma eq_Clobber: forall (x y : Clobber), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_Clobber : ott_coq_equality.
+
+Lemma eq_bv: forall (x y : bv), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_bv : ott_coq_equality.
+
+Lemma eq_iv: forall (x y : iv), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_iv : ott_coq_equality.
+
+Lemma eq_fresh: forall (x y : fresh), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_fresh : ott_coq_equality.
+
+Lemma eq_id: forall (x y : id), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_id : ott_coq_equality.
+
+Lemma eq_list_r_r: forall (x y : list_r_r), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_list_r_r : ott_coq_equality.
+
+
+Fixpoint eq_T (x y : T): {x = y} + {x <> y}
+with eq_list_T (x y : list_T): {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_T : ott_coq_equality.
+Hint Resolve eq_list_T : ott_coq_equality.
+
+
+
+Lemma eq_excl: forall (x y : excl), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_excl : ott_coq_equality.
+
+Lemma eq_rho: forall (x y : rho), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_rho : ott_coq_equality.
+
+Lemma eq_list_rho: forall (x y : list_rho), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_list_rho : ott_coq_equality.
+
+Fixpoint eq_e (x y : e): {x = y} + {x <> y} 
+with eq_list_e (x y : list_e): {x = y} + {x <> y}
+with eq_ee (x y : ee): {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+  decide equality; auto with ott_coq_equality arith.
+  decide equality; auto with ott_coq_equality arith.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_e : ott_coq_equality.
+Hint Resolve eq_list_e : ott_coq_equality.
+Hint Resolve eq_ee : ott_coq_equality.
+
+Lemma eq_list_e_T: forall (x y : list_e_T), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_list_e_T : ott_coq_equality.
+
+Lemma eq_G: forall (x y : G), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_G : ott_coq_equality.
+
+Lemma eq_list_e_e: forall (x y : list_e_e), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_list_e_e : ott_coq_equality.
+
+Lemma eq_L: forall (x y : L), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_L : ott_coq_equality.
+
+Lemma eq_E: forall (x y : E), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_E : ott_coq_equality.
+
+Lemma eq_list_E: forall (x y : list_E), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_list_E : ott_coq_equality.
+
+Lemma eq_fns: forall (x y : fns), {x = y} + {x <> y}.
+Proof.
+  decide equality; auto with ott_coq_equality arith.
+  decide equality; auto with ott_coq_equality arith.
+Defined.
+Hint Resolve eq_fns : ott_coq_equality.
+
+}}
 
 defns
 Jtype :: '' ::= 
@@ -524,25 +824,24 @@ M,L,H,S,C |- x |-> v, E
 % E == dynamic memory trace
 % S == clobber semantics
 M,L,H,S,C |- e |-> l, E [[:prodvalue]]
-%S' = apply(S,E) [[:apply]]
-%~ (l INS C) [[:memnotclobber]]
+S' = apply(S,E) [[:apply]]
+~ (l INSI C) [[:memnotclobber]]
 ------------------------------------------------- :: Read1
-M,L,H,S,C |- read(e) |-> v, E
-%++[read(l,excl,v,0)]
+M,L,H,S,C |- read(e) |-> v, E++[read(l,excl,v,0)]
 %M,L,H,S,C |- read(e) |-> S'(l), E++[read(l,excl,v,0)] 
 
 M,L,H,S,C |- e |-> l, E [[:prodvalue]]
+l INSI C [[:memclobber]]
 % S' = apply(S,E) [[:apply]]
 ------------------------------------------------- :: Read2
-M,L,H,S,C |- read(e) |-> H(l), E
-%++[read(l,excl,v,0)] 
+M,L,H,S,C |- read(e) |-> H(l), E++[read(l,excl,v,0)] 
 
-M,L,H,S,C |- e1 |-> l, E [[:prodvalue]]
-M,L,H,S,C |- e2 |-> l, E [[:prodvalue]]
-M,L,H,S,C |- e3 |-> l, E [[:prodvalue]]
+%M,L,H,S,C |- e1 |-> l, E [[:prodvalue]]
+%M,L,H,S,C |- e2 |-> l, E [[:prodvalue]]
+%M,L,H,S,C |- e3 |-> l, E [[:prodvalue]]
 % S' = apply(S,E) [[:apply]]
-------------------------------------------------- :: ReadE
-M,L,H,S,C |- read(e1, excl, e2, e3) |-> v, E
+%------------------------------------------------- :: ReadE
+%M,L,H,S,C |- read(e1, excl, e2, e3) |-> v, E
 
 M,L,H,S,C |- e1 |-> l, E1 [[:prod1value]]
 % S' = apply(S,E1) [[:apply]]
@@ -776,7 +1075,48 @@ Proof.
   rewrite H3.
   assumption.
 Qed.
+(*
 
+
+
+Theorem paper1 :
+ forall (e5:e) (t:T) (M:M) (H:H) (S:Clobber) (C:C) (T1 T2:T)  G P O,
+     typing G P O e5 T1 /\ eval M L H S C e5 v E /\ map_consist M O /\ local_val_consit L H /\ store_consist S H ->
+     result_consist v H M T  /\ memory_trace_consist E H /\ trace_has_privs E P
+
+Lemma E :M P  <-> forall O,
+      O = read l c v t -> exists r l, In l (M r) /\ In (reads r) Phi
+      /\
+      O = write l c v t -> exists r l, In l (M r) /\ In (writes r) Phi
+      /\
+      O = reduceid l c v t -> exists r l, In l (M r) /\ In (reducesid r) Phi
+
+
+phi_A (op1 l1 c1 v1 t1) (op2 l2 c2 v2 t2) <->
+      phi_A (op1 l1 c1 v1 t1) (op2 l2 c2 v2 t2) \/
+      c1 = atomic /\ c2 = atomic /\ t1 <> t2
+
+Theorem paper4: 
+forall (l: list (e * P)) M L H S,
+     M ~ O /\ L ~H M[[Gamma]] /\ S ~ H ->
+       valid_interleaving
+
+Theorem paper5 :
+ forall (e5:e) (t:T) (M:M) (H:H) (S:Clobber) (C:C) (T1 T2:T)  G P O,
+     (types1: typing G P O e1 T1)
+     (types2: typing G P O e2 T1)
+     (privsmatch: pound_M P1  P2)
+     e1', e2' is a subexpression (represented by subtrees?)
+     from E1' e1'
+     from E2' e2'
+     non interfering.
+
+
+E :M Φ ⇔ ∀ ∈ E.
+( = read(l, c, v, t) ⇒ ∃r, l ∈ M(r) ∧ reads(r) ∈ Φ) ∧
+( = write(l, c, v, t) ⇒ ∃r, l ∈ M(r) ∧ writes(r) ∈ Φ) ∧
+( = reduceid(l, c, v, t) ⇒ ∃r, l ∈ M(r) ∧ reducesid(r) ∈ Φ)
+*)
 
 Theorem progress : forall (e5:e) (t:T) (M:M) (H:H) (S:Clobber) (C:C) (T1 T2:T),
      exists E L v,
@@ -848,7 +1188,9 @@ Proof.
     intros.
     inversion H2.
   - (* Read *)
-    exists (E_NullE).
+    exists (E_Append E_NullE (E_ReadE (E_MemoryLoc ML_NilLoc) EX_Nil E_PlaceHolder E_Zero)).
+
+    (* exists (E_NullE). *)
     exists L_Nil.
     repeat eexists.
     intros.
