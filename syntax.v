@@ -15,14 +15,12 @@ Inductive ω :=
   | disj : r → r → ω.
 Definition Ω := set ω.
 
-
 (* Privileges *)
 Inductive φ := 
   | reads : r → φ 
   | writes : r → φ 
   | reduces : var → r → φ.
 Definition Φ := set φ.
-
 
 (* Coherence modes *)
 Inductive q := 
@@ -31,7 +29,6 @@ Inductive q :=
 Definition Q := set q.
 
 (* Closures mode *) 
-
 Inductive T := 
   | tbool 
   | tint
