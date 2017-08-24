@@ -314,7 +314,12 @@ systems.
 
 One of the core notions of Legion is the notion of region relations. These
 describe how regions are related, either by being disjoint, or by being
-subregions of one another. See Figure~\ref{regionrel} for the syntax. 
+subregions of one another. See Figure~\ref{regionrel} for the syntax. Another
+important construction are mappers, \texttt{M}, which map logical regions
+\texttt{r} with a set of physical locations. We include some definitions as
+well, notably the notion that a mapping respects (\texttt{resp}) a set of
+region requirements iff for every subregion relation and disjoint relation, the
+mapping to sets of physical locations follows the corresponding set relation.
 
 \begin{figure*}
 \centering
@@ -382,8 +387,7 @@ Lemma resp_clos : ∀ M Ω, M ~ Ω ↔ M ~* Ω.
 \label{regionrelproof}
 \end{figure}
 
-TODO: Noah, if you want to put a rough description of your preservation proof 
-here feel free. Your type inference isn't loading for me.
+TODO: Noah, if you want to put any other proof stuff here feel free. 
 
 \section{Future Work}
 
