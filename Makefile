@@ -1,10 +1,12 @@
 all: legion.v legion.tex legion.pdf
 
+OTT=~/src/ott/src/ott
+
 legion.v: legion.ott
-	ott legion.ott -o legion.v -picky_multiple_parses true
+	$(OTT) legion.ott -o legion.v -picky_multiple_parses true
 
 legion.tex: legion.ott
-	ott legion.ott -o correctnesshpc/legion.tex -picky_multiple_parses true
+	$(OTT) legion.ott -o correctnesshpc/legion.tex -picky_multiple_parses true
 
 util.vo: util.v
 	coqc util.v
