@@ -1033,7 +1033,7 @@ Definition IntOp (_ _:e) := E_PlaceHolder.
 Definition Comp (_ _:e) := E_PlaceHolder.
 
 (* how to do the substitution? *)
-Fixpoint apply_mem (S:list emem) (E : E) :=
+Fixpoint apply_mem (S:list e) (E : E) :=
 match S, E with
 | S', [] => S'
 | S', (em_ReadE _ _ _ _)::E' => apply_mem S' E'
@@ -1042,29 +1042,22 @@ match S, E with
                                     S' (* S'[id(S'(l),v)/l]  *)
 end.
 
-Fixpoint coherent (S:list emem) (L1:list emem) (L2:list emem) (E: list emem) :=
+Fixpoint coherent (S:list e) (L1:list e) (L2:list e) (E: list emem) :=
   match S, L1, L2, E with
 | S', L1', L2', [] => True
 | S', L1', L2', eps :: E' =>
   match eps with
   | em_ReadE l c v t => 
-    (* In l L2 -> *) coherent S' L1' L2' E'
+    In l L2 -> (*S *) l = v /\ coherent S' L1' L2' E'
   | em_WriteE l c v t =>
-    ( (* In l L1 -> *) coherent (apply_mem S' [eps]) L1' (* (l:: *) (L2') E') \/
+    In l L1 -> coherent (apply_mem S' [eps]) L1' (L2' ++ [l]) E' \/
     coherent (apply_mem S' [eps]) L1' L2' E'
   | _ =>
     coherent (apply_mem S' [eps]) L1' L2' E'
   end
 end.
 
-(* think you need an accumulator here
-one of the things you have to do is take an element off until you reach the end of it.
-
-
- *)
-
-(* remainder list, implemented separately to shut up Coq's termination checker *)
-
+(* remainder list, helper function for any_interleave implemented separately to shut up Coq's termination checker *)
 Fixpoint rem_list m (acc: list (list emem)) (l: list (list emem)) :=
   match l with
   | [] => []
@@ -1102,31 +1095,37 @@ Fixpoint member m l :=
   match l with
   | [] => false
   | m' :: l' =>
-    if eq_emem m m' then
+    if eq_e m m' then
       true
     else
       member m l'
   end.
 
-Fixpoint Lexcl E (C:list emem) :=
-  filter (fun x => negb (member x C))
-         (filter (fun a =>
-            match a with
-            | em_ReadE l priv_excl v t => true
-            | em_WriteE l priv_excl  v t => true
-            | em_ReduceIdE l priv_excl v t => true
-            | _ => false 
-            end) E).
+(* not a filter, it's a way of breaking it down
+how do I get the locations?
+that is a good question.
 
-Fixpoint Latomic E (C:list emem) :=
-  filter (fun x => negb (member x (C++(Lexcl E C))))
-         (filter (fun a =>
+I think C is what I need to remove. 
+ *)
+Fixpoint Lexcl E (C:list e) :=
+  filter (fun x => negb (member x C))
+         (fold_right (fun a b =>
             match a with
-            | em_ReadE l priv_atomic v t => true
-            | em_WriteE l priv_atomic  v t => true
-            | em_ReduceIdE l priv_atomic v t => true
-            | _ => false 
-            end) E).
+            | em_ReadE l priv_excl v t => l :: b
+            | em_WriteE l priv_excl  v t => l :: b
+            | em_ReduceIdE l priv_excl v t => l :: b
+            | _ => b
+            end) [] E).
+
+Fixpoint Latomic E (C:list e) :=
+  filter (fun x => negb (member x (C++(Lexcl E C))))
+         (fold_right (fun a b =>
+            match a with
+            | em_ReadE l priv_atomic v t => l :: b
+            | em_WriteE l priv_atomic  v t => l :: b
+            | em_ReduceIdE l priv_atomic v t => l :: b
+            | _ => b
+            end) [] E).
 
 Fixpoint seq_equiv S L1 L2 (E':E) (l: list E) :=
   coherent S L1 L2 (fold_right (fun a b => a ++ b) [] l) /\
@@ -1152,10 +1151,10 @@ Fixpoint down_t (t:e) (E: list emem) :=
       E'
   end.
 
-Fixpoint valid_interleave S C (E':E) (l: list E) :=
-  any_interleave ([E']++l) /\
-  coherent S (Lprivs E' C) (Lprivs E' C) E' /\
-  seq_equiv S (Lprivs  E' C) (Lprivs E' C) E' l /\ 
+Fixpoint valid_interleave S C (E': list emem) (l: list (list emem)) :=
+  any_interleave E' l /\
+  coherent S (Lexcl E' C) (Lexcl E' C) E' /\
+  seq_equiv S (Lexcl  E' C) (Lexcl E' C) E' l /\ 
   forall t, seq_equiv S (Latomic E' C) nil (down_t t E') [(down_t t (fold_right (fun a b => a ++ b) [] l))].
 
 (* fold append here *)
