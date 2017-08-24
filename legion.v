@@ -139,7 +139,7 @@ with e : Set :=
  | E_True : e (*r constant true *)
  | E_False : e (*r constant false *)
  | E_Zero : e
- | E_Succ (Clobber5:list emem) (iv5:iv)
+ | E_Succ (Clobber5:list e) (iv5:iv)
 with list_e : Set := 
  | Nil_list_e : list_e
  | Cons_list_e (_:e) (_:list_e)
@@ -1253,11 +1253,11 @@ is_G_of_G G5 ->
 
 (* defns Jop *)
 Inductive eval : M -> L -> H -> list emem -> list e -> e -> e -> E -> Prop :=    (* defn eval *)
- | EVa : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (x:termvar) (v5:e) (E5:E),
+ | EVa : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (x:termvar) (v5:e) (E5:E),
      is_L_of_L L5 ->
      is_v_of_e v5 ->
      eval M5 L5 H5 Clobber5 C5 (E_Va x) v5 E5
- | ERead1 : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (e5:e) (E5:E) (l5:l) (privs5:privs) (v5:e) (Clobber':list emem)
+ | ERead1 : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (e5:e) (E5:E) (l5:l) (privs5:privs) (v5:e) (Clobber':list emem)
      (prodvalue: eval M5 L5 H5 Clobber5 C5 e5 (E_MemoryLoc l5) E5)
      (apply:   Clobber'   =   (apply_mem Clobber5 E5)  )
      (memnotclobber:  (not (   In   (E_MemoryLoc l5)     C5    )) ),
@@ -1266,7 +1266,7 @@ Inductive eval : M -> L -> H -> list emem -> list e -> e -> e -> E -> Prop :=   
      is_v_of_e v5 ->
      is_v_of_e v5 ->
      eval M5 L5 H5 Clobber5 C5 (E_Read e5) v5  ( E5  ++ [em_ReadE (E_MemoryLoc l5) privs5 v5 E_Zero] ) 
- | ERead2 : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (e5:e) (l5:l) (E5:E) (privs5:privs) (v5:e) (Clobber':list emem)
+ | ERead2 : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (e5:e) (l5:l) (E5:E) (privs5:privs) (v5:e) (Clobber':list emem)
      (prodvalue: eval M5 L5 H5 Clobber5 C5 e5 (E_MemoryLoc l5) E5)
      (apply:   Clobber'   =   (apply_mem Clobber5 E5)  )
      (memclobber:  In   (E_MemoryLoc l5)  C5  ),
@@ -1274,7 +1274,7 @@ Inductive eval : M -> L -> H -> list emem -> list e -> e -> e -> E -> Prop :=   
      is_e_of_e e5 ->
      is_v_of_e v5 ->
      eval M5 L5 H5 Clobber5 C5 (E_Read e5) (E_HeapVal (H_Hl H5 l5))  ( E5 ++ [em_ReadE (E_MemoryLoc l5) privs5 v5 E_Zero] ) 
- | EWrite : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (e1 e2:e) (l5:l) (E_5 E1:E) (Clobber':list emem) (v5:e) (E2:E)
+ | EWrite : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (e1 e2:e) (l5:l) (E_5 E1:E) (Clobber':list emem) (v5:e) (E2:E)
      (prod1value: eval M5 L5 H5 Clobber5 C5 e1 (E_MemoryLoc l5) E1)
      (prod2value: eval M5 L5 H5 Clobber' C5 e2 v5 E2)
      (validinterleave: valid_interleave Clobber5 Clobber' E_5 ([E1]++[E2])) 
@@ -1284,7 +1284,7 @@ Inductive eval : M -> L -> H -> list emem -> list e -> e -> e -> E -> Prop :=   
      is_e_of_e e2 ->
      is_v_of_e v5 ->
      eval M5 L5 H5 Clobber5 C5 (E_Write e1 e2) (E_MemoryLoc l5) E_5
- | EReduce : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (id5:id) (e1 e2:e) (l5:l) (E_5 E1:E) (Clobber':list emem) (v5:e) (E2:E)
+ | EReduce : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (id5:id) (e1 e2:e) (l5:l) (E_5 E1:E) (Clobber':list emem) (v5:e) (E2:E)
      (prod1value: eval M5 L5 H5 Clobber5 C5 e1 (E_MemoryLoc l5) E1)
      (prod2value: eval M5 L5 H5 Clobber' C5 e2 v5 E2),
      is_L_of_L L5 ->
@@ -1292,7 +1292,7 @@ Inductive eval : M -> L -> H -> list emem -> list e -> e -> e -> E -> Prop :=   
      is_e_of_e e2 ->
      is_v_of_e v5 ->
      eval M5 L5 H5 Clobber5 C5 (E_Reduce id5 e1 e2) (E_MemoryLoc l5) E_5
- | EReduceId : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (l5:l) (e1 e2 e3 v_5:e) (E_5:E) (v1:e) (E1:E) (Clobber':list emem) (v2:e) (E2:E) (v3:e) (E3:E) (v4:e)
+ | EReduceId : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (l5:l) (e1 e2 e3 v_5:e) (E_5:E) (v1:e) (E1:E) (Clobber':list emem) (v2:e) (E2:E) (v3:e) (E3:E) (v4:e)
      (prod1value: eval M5 L5 H5 Clobber5 C5 (E_MemoryLoc l5) v1 E1)
      (prod2value: eval M5 L5 H5 Clobber' C5 e1 v2 E2)
      (prod3value: eval M5 L5 H5 Clobber' C5 e2 v3 E3)
@@ -1307,50 +1307,50 @@ Inductive eval : M -> L -> H -> list emem -> list e -> e -> e -> E -> Prop :=   
      is_v_of_e v3 ->
      is_v_of_e v4 ->
      eval M5 L5 H5 Clobber5 C5 (E_Reduceid l5 e1 e2 e3) v_5 E_5
- | ENull : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e),
+ | ENull : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e),
      is_L_of_L L5 ->
      eval M5 L5 H5 Clobber5 C5 E_NullLoc E_NullLoc []
- | ENew : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (T5:T) (r5:r) (l5:l),
+ | ENew : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (T5:T) (r5:r) (l5:l),
      is_L_of_L L5 ->
      eval M5 L5 H5 Clobber5 C5 (E_New T5 r5) (E_MemoryLoc l5) []
- | ENullTrue : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (T5:T),
+ | ENullTrue : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (T5:T),
      is_L_of_L L5 ->
      eval M5 L5 H5 Clobber5 C5 (E_NullFn T5 r_Null) (E_Base1 bv_True) []
- | ENullFalse : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (T5:T) (r5:r),
+ | ENullFalse : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (T5:T) (r5:r),
      is_L_of_L L5 ->
       (not (    (T_PointerOne T5 r5)   =   (T_PointerOne T5 r_Null)    ))  ->
      eval M5 L5 H5 Clobber5 C5 (E_NullFn T5 r5) (E_Base1 bv_False) []
- | EIsNullTrue : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (l5:l) (e1:e) (E1:E)
+ | EIsNullTrue : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (l5:l) (e1:e) (E1:E)
      (prod1value: eval M5 L5 H5 Clobber5 C5 e1 (E_MemoryLoc l5) E1),
      is_L_of_L L5 ->
      is_e_of_e e1 ->
        (E_MemoryLoc l5)   =   E_NullLoc   ->
      eval M5 L5 H5 Clobber5 C5 (E_isNull (E_MemoryLoc l5)) (E_Base1 bv_True) []
- | EIsNullFalse : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (l5:l) (e1:e) (E1:E)
+ | EIsNullFalse : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (l5:l) (e1:e) (E1:E)
      (prod1value: eval M5 L5 H5 Clobber5 C5 e1 (E_MemoryLoc l5) E1),
      is_L_of_L L5 ->
      is_e_of_e e1 ->
       (not (    (E_MemoryLoc l5)   =   E_NullLoc    ))  ->
      eval M5 L5 H5 Clobber5 C5 (E_isNull (E_MemoryLoc l5)) (E_Base1 bv_False) []
- | EUpRgn : forall (r_list:list_r) (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (e5 v5:e) (E5:E)
+ | EUpRgn : forall (r_list:list_r) (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (e5 v5:e) (E5:E)
      (prodvalue: eval M5 L5 H5 Clobber5 C5 e5 v5 E5),
      is_L_of_L L5 ->
      is_e_of_e e5 ->
      is_v_of_e v5 ->
      eval M5 L5 H5 Clobber5 C5 (E_UpRegion e5 r_list) v5 E5
- | EDnRgn1 : forall (r_list:list_r) (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (e5:e) (l5:l) (E5:E) (v5:e)
+ | EDnRgn1 : forall (r_list:list_r) (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (e5:e) (l5:l) (E5:E) (v5:e)
      (prodvalue: eval M5 L5 H5 Clobber5 C5 e5 v5 E5),
      is_L_of_L L5 ->
      is_e_of_e e5 ->
      is_v_of_e v5 ->
      eval M5 L5 H5 Clobber5 C5 (E_DownRegion e5 r_list) (E_MemoryLoc l5) E5
- | EDnRgn2 : forall (r_list:list_r) (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (e5:e) (E5:E) (v5:e)
+ | EDnRgn2 : forall (r_list:list_r) (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (e5:e) (E5:E) (v5:e)
      (prodvalue: eval M5 L5 H5 Clobber5 C5 e5 v5 E5),
      is_L_of_L L5 ->
      is_e_of_e e5 ->
      is_v_of_e v5 ->
      eval M5 L5 H5 Clobber5 C5 (E_DownRegion e5 r_list) E_NullLoc E5
- | EColor : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (e1 e2 e3:e) (K':K) (E':E) (l5:l) (E1:E) (Clobber':list emem) (v5:e) (E2:E) (Clobber'':list emem) (E3:E)
+ | EColor : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (e1 e2 e3:e) (K':K) (E':E) (l5:l) (E1:E) (Clobber':list emem) (v5:e) (E2:E) (Clobber'':list emem) (E3:E)
      (prod1value: eval M5 L5 H5 Clobber5 C5 e1 (E_MemoryLoc l5) E1)
      (prod2value: eval M5 L5 H5 Clobber' C5 e2 v5 E2)
      (prod3value: eval M5 L5 H5 Clobber'' C5 e3 v5 E3),
@@ -1360,10 +1360,10 @@ Inductive eval : M -> L -> H -> list emem -> list e -> e -> e -> E -> Prop :=   
      is_e_of_e e3 ->
      is_v_of_e v5 ->
      eval M5 L5 H5 Clobber5 C5 (E_Color e1 e2 e3) (E_Kthing K') E'
- | ENewColor : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (r5:r) (K5:K),
+ | ENewColor : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (r5:r) (K5:K),
      is_L_of_L L5 ->
      eval M5 L5 H5 Clobber5 C5 (E_NewColor r5) (E_Kthing K5) []
- | EPartition : forall (r_list:list_r) (p:index) (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (e1 e2:e) (l5:l) (E':E) (K5:K) (E1:E) (Clobber':list emem) (v5:e) (E2:E) (t105:r)
+ | EPartition : forall (r_list:list_r) (p:index) (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (e1 e2:e) (l5:l) (E':E) (K5:K) (E1:E) (Clobber':list emem) (v5:e) (E2:E) (t105:r)
      (prod1value: eval M5 L5 H5 Clobber5 C5 e1 (E_Kthing K5) E1)
      (prod2value: eval M5 L5 H5 Clobber' C5 e2 v5 E2),
           nth_list_r (p - 1) r_list = Some t105 ->
@@ -1372,13 +1372,13 @@ is_L_of_L L5 ->
      is_e_of_e e2 ->
      is_v_of_e v5 ->
      eval M5 L5 H5 Clobber5 C5 (E_Part t105 e1 r_list e2) (E_MemoryLoc l5) E'
- | EPack : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (e1:e) (T1:T) (v':e) (E_5:E) (K5:K) (E1:E)
+ | EPack : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (e1:e) (T1:T) (v':e) (E_5:E) (K5:K) (E1:E)
      (prod1value: eval M5 L5 H5 Clobber5 C5 e1 (E_Kthing K5) E1),
      is_L_of_L L5 ->
      is_e_of_e e1 ->
      is_v_of_e v' ->
      eval M5 L5 H5 Clobber5 C5 (E_Pack e1 T1) v' E_5
- | EUnpack : forall (rho_list:list_rho) (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (e1:e) (id5:id) (T1:T) (e2 v2:e) (E':E) (v_5:e) (E1:E) (L':L) (v1:e) (M':M) (Clobber':list emem) (E2:E)
+ | EUnpack : forall (rho_list:list_rho) (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (e1:e) (id5:id) (T1:T) (e2 v2:e) (E':E) (v_5:e) (E1:E) (L':L) (v1:e) (M':M) (Clobber':list emem) (E2:E)
      (prod1memval: eval M5 L5 H5 Clobber5 C5 e1 (E_RegRelInst rho_list v_5) E1)
      (lreplace:   L'   =   (L_LRepl L5 v1 id5)  )
      (prod2value: eval M' L' H5 Clobber' C5 e2 v_5 E2),
@@ -1390,7 +1390,7 @@ is_L_of_L L5 ->
      is_L_of_L L' ->
      is_v_of_e v1 ->
      eval M5 L5 H5 Clobber5 C5 (E_Unpack e1 id5 T1 e2) v2 E'
- | ECall : forall (e_v_list:list_e_e) (r_list:list_r) (n:index) (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (id5:id) (E'':E) (L':L) (t106:(e*e))
+ | ECall : forall (e_v_list:list_e_e) (r_list:list_r) (n:index) (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (id5:id) (E'':E) (L':L) (t106:(e*e))
      (memreplace:   L'   =   (L_LMapping L5 e_v_list)  ),
           nth_list_e_e (n - 1) e_v_list = Some t106 ->
 is_L_of_L L5 ->
@@ -1398,7 +1398,7 @@ is_L_of_L L5 ->
      (Forall (fun (tmp_:(e*e)) => match tmp_ with (e_,v_) => is_e_of_e e_ end) (unmake_list_e_e e_v_list)) ->
      (Forall (fun (tmp_:(e*e)) => match tmp_ with (e_,v_) => is_v_of_e v_ end) (unmake_list_e_e e_v_list)) ->
      eval M5 L5 H5 Clobber5 C5 (E_FuncCall id5 r_list (make_list_e (map_list_e_e (fun (e_:e) (v_:e) => e_) e_v_list))) (match t106 with (e_,v_) => v_ end) E''
- | EIntOp : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (e1 e2 v_5:e) (E_5:E) (v1:e) (E1:E) (v2:e) (E2:E)
+ | EIntOp : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (e1 e2 v_5:e) (E_5:E) (v1:e) (E1:E) (v2:e) (E2:E)
      (prod1value: eval M5 L5 H5 Clobber5 C5 e1 v1 E1)
      (prod2value: eval M5 L5 H5 Clobber5 C5 e2 v2 E2),
      is_L_of_L L5 ->
@@ -1408,7 +1408,7 @@ is_L_of_L L5 ->
      is_v_of_e v1 ->
      is_v_of_e v2 ->
      eval M5 L5 H5 Clobber5 C5 (E_IntOp e1 e2) v_5 E_5
- | EComp : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (e1 e2 v_5:e) (E_5:E) (v1:e) (E1:E) (v2:e) (E2:E)
+ | EComp : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (e1 e2 v_5:e) (E_5:E) (v1:e) (E1:E) (v2:e) (E2:E)
      (prod1value: eval M5 L5 H5 Clobber5 C5 e1 v1 E1)
      (prod2value: eval M5 L5 H5 Clobber5 C5 e2 v2 E2),
      is_L_of_L L5 ->
@@ -1418,7 +1418,7 @@ is_L_of_L L5 ->
      is_v_of_e v1 ->
      is_v_of_e v2 ->
      eval M5 L5 H5 Clobber5 C5 (E_Comp e1 e2) v_5 E_5
- | ELet : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (id5:id) (T5:T) (e1 e2 v_5:e) (E_5 E1:E) (v2:e) (E2:E) (L':L) (v1:e)
+ | ELet : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (id5:id) (T5:T) (e1 e2 v_5:e) (E_5 E1:E) (v2:e) (E2:E) (L':L) (v1:e)
      (prod1value: eval M5 L5 H5 Clobber5 C5 e1 v1 E1)
      (prod2value: eval M5 L5 H5 Clobber5 C5 e2 v2 E2),
      is_L_of_L L5 ->
@@ -1431,7 +1431,7 @@ is_L_of_L L5 ->
      is_v_of_e v1 ->
        L'   =   (L_LRepl L5 v1 id5)   ->
      eval M5 L5 H5 Clobber5 C5 (E_Let id5 T5 e1 e2) v_5 E_5
- | EIfTrue : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (e1 e2 e3 v5:e) (E_5 E1:E)
+ | EIfTrue : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (e1 e2 e3 v5:e) (E_5 E1:E)
      (prod1value: eval M5 L5 H5 Clobber5 C5 e1 (E_Base1 bv_True) E1)
      (prod1value: eval M5 L5 H5 Clobber5 C5 e2 v5 E1),
      is_L_of_L L5 ->
@@ -1440,7 +1440,7 @@ is_L_of_L L5 ->
      is_e_of_e e3 ->
      is_v_of_e v5 ->
      eval M5 L5 H5 Clobber5 C5 (E_If e1 e2 e3) v5 E_5
- | EIfFalse : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (e1 e2 e3 v5:e) (E_5 E1 E2:E)
+ | EIfFalse : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (e1 e2 e3 v5:e) (E_5 E1 E2:E)
      (prod1value: eval M5 L5 H5 Clobber5 C5 e1 (E_Base1 bv_False) E1)
      (prod2value: eval M5 L5 H5 Clobber5 C5 e3 v5 E2),
      is_L_of_L L5 ->
@@ -1449,52 +1449,52 @@ is_L_of_L L5 ->
      is_e_of_e e3 ->
      is_v_of_e v5 ->
      eval M5 L5 H5 Clobber5 C5 (E_If e1 e2 e3) v5 E_5
- | EFuncDef : forall (e_list:list_e) (r_list:list_r) (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (id5:id) (v5:e) (E5:E) (L':L),
+ | EFuncDef : forall (e_list:list_e) (r_list:list_r) (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (id5:id) (v5:e) (E5:E) (L':L),
      is_L_of_L L5 ->
      is_v_of_e v5 ->
      is_L_of_L L' ->
      (Forall (fun (e_:e) => is_e_of_e e_) (unmake_list_e e_list)) ->
        L'   =   (L_LRepl L5 (E_FuncCall id5 r_list e_list) id5)   ->
      eval M5 L5 H5 Clobber5 C5 (E_FuncDef id5 r_list e_list) v5 E5
- | EFuncDefList : forall (id_rr_ee_list:list_id_rr_ee) (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (v5:e) (E5:E),
+ | EFuncDefList : forall (id_rr_ee_list:list_id_rr_ee) (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (v5:e) (E5:E),
      is_L_of_L L5 ->
      is_v_of_e v5 ->
      (Forall (fun (tmp_:(id*rr*ee)) => match tmp_ with (id_,rr_,ee_) => is_ee_of_ee ee_ end) (unmake_list_id_rr_ee id_rr_ee_list)) ->
      eval M5 L5 H5 Clobber5 C5 (E_FuncDefList id_rr_ee_list) v5 E5
- | ETypedExpr : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (e5:e) (T5:T) (v5:e) (E5:E),
+ | ETypedExpr : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (e5:e) (T5:T) (v5:e) (E5:E),
      is_L_of_L L5 ->
      is_e_of_e e5 ->
      is_v_of_e v5 ->
      eval M5 L5 H5 Clobber5 C5 e5 v5 E5 ->
      eval M5 L5 H5 Clobber5 C5 (E_TypedExpr e5 T5) v5 E5
- | EPlace : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (E5:E),
+ | EPlace : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (E5:E),
      is_L_of_L L5 ->
      eval M5 L5 H5 Clobber5 C5 E_PlaceHolder E_PlaceHolder E5
- | Ebv : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (bv5:bv) (E5:E),
+ | Ebv : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (bv5:bv) (E5:E),
      is_L_of_L L5 ->
      eval M5 L5 H5 Clobber5 C5 (E_Base1 bv5) (E_Base1 bv5) E5
- | Eiv : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (iv5:iv) (E5:E),
+ | Eiv : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (iv5:iv) (E5:E),
      is_L_of_L L5 ->
      eval M5 L5 H5 Clobber5 C5 (E_Base2 iv5) (E_Base2 iv5) E5
- | ETuple : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (v1 v2:e) (E5:E),
+ | ETuple : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (v1 v2:e) (E5:E),
      is_L_of_L L5 ->
      is_v_of_e v1 ->
      is_v_of_e v2 ->
      eval M5 L5 H5 Clobber5 C5 (E_Tuple v1 v2) (E_Tuple v1 v2) E5
- | ENullLoc : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (E5:E),
+ | ENullLoc : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (E5:E),
      is_L_of_L L5 ->
      eval M5 L5 H5 Clobber5 C5 E_NullLoc E_NullLoc E5
- | EMemoryLoc : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (l5:l) (E5:E),
+ | EMemoryLoc : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (l5:l) (E5:E),
      is_L_of_L L5 ->
      eval M5 L5 H5 Clobber5 C5 (E_MemoryLoc l5) (E_MemoryLoc l5) E5
- | ERegRelInst : forall (rho_list:list_rho) (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (v5:e) (E5:E),
+ | ERegRelInst : forall (rho_list:list_rho) (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (v5:e) (E5:E),
      is_L_of_L L5 ->
      is_v_of_e v5 ->
      eval M5 L5 H5 Clobber5 C5 (E_RegRelInst rho_list v5) (E_RegRelInst rho_list v5) E5
- | EHeapVal : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (E5:E),
+ | EHeapVal : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (E5:E),
      is_L_of_L L5 ->
      eval M5 L5 H5 Clobber5 C5 (E_HeapVal H5) (E_HeapVal H5) E5
- | EKthing : forall (M5:M) (L5:L) (H5:H) (Clobber5:list emem) (C5:list e) (K5:K) (E5:E),
+ | EKthing : forall (M5:M) (L5:L) (H5:H) (Clobber5:list e) (C5:list e) (K5:K) (E5:E),
      is_L_of_L L5 ->
      eval M5 L5 H5 Clobber5 C5 (E_Kthing K5) (E_Kthing K5) E5.
 Notation "G , P , O |- e : T ":= (typing G P O e T) (no associativity, at level 99). 
