@@ -99,12 +99,12 @@ specifications enable formal correctness proofs for large software systems that
 were previously unattainable \cite{?}. By integrating a formal specification
 tightly with an implementation, one can achieve the highest levels of
 confidence in code currently possible \cite{?}. For example, the Compcert
-project implements an optimizing c compiler and proves it correct. The success
+project implements an optimizing C compiler and proves it correct. The success
 of Compcert in removing compiler bugs has been well documented. We will discuss
 later how Compcert could be used in building verifiable HPC systems.
 
 In HPC, programming models have become an increasingly important way to ensure
-that code stays maintanable, performant, and portable \cite{?}. We claim that
+that code stays maintainable, performant, and portable \cite{?}. We claim that
 these programming models provide a good target for formalization: any
 correctness arguments can be leveraged by every program using the model. It is
 exactly this kind of modularization of proofs that has been so successful in
@@ -131,10 +131,10 @@ the core semantics has stayed relatively stable \cite{regent, deppart}.
 
 By partitioning regions into \emph{subregions}, and tracking \emph{privileges}, 
 Legion is able to ensure that certain code won't interfere or alias, and can
-therefor be safely, at least with respect to those memory regions, run in
+therefore be safely, at least with respect to those memory regions, run in
 parallel. This theory has been put into practice to impressive effect, and has
 been shown to scale both within a node and between \cite{legionpapers}. That
-said, there are still challenges subtle bugs that occasionally show up in the
+said, there are still challenges --subtle bugs that occasionally show up in the
 implementation. It is possible that these kinds of bugs could manifest
 themselves in ways that would lead to incorrect conclusions when informing
 major decisions, something we'd generally like to avoid. One goal of this paper
@@ -160,7 +160,7 @@ specification, are very informal, primarily consisting of english descriptions
 of how different constructs should behave \cite{openmp}. Others, like Legion's,
 are written by hand in the using standard notation for logical relations, etc.
 For this paper, when we refer to a \emph{formal} specification, we are
-referring to a specification defined in a formal logic, like Coq. 
+referring to a specification defined in a formal logic, eg. Coq. 
 
 While semantics defined by hand as logical relations are a huge improvement
 over natural language specifications, there is still much room for improvement.
@@ -475,7 +475,7 @@ All of these issues are addressable given enough time and effort. Some offer
 a nice opportunity for modularity within the tasking formalization. For example, 
 ordering tasks based on dependencies of values is common accross all tasking
 systems \cite{cilk, hpx}, and is likely a sort of sub-semantics that they could
-all share, reducing proof burden across different runtimes.
+all share, reducing proof burden across different run-times.
 
 \subsection{Performance}
 
