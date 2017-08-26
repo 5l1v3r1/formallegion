@@ -442,8 +442,8 @@ helped us handle unspecified corner cases in the Core Legion specification (eg.
 the list of functions in the \texttt{T-Program} relation has no corresponding
 transition in the operational semantics). 
 
-The theorems we are using are described in Figure~\ref{soundnesstheorem} and
-Figure~\ref{preservationtheorem} (see \texttt{https://github.com/lanl/formallegion}
+The theorems we are using are described in Figure~\ref{preservationtheorem} and
+Figure~\ref{soundnesstheorem} (see \texttt{https://github.com/lanl/formallegion}
 for Coq versions of the proofs). 
 
 \begin{figure}
@@ -460,7 +460,7 @@ Theorem preservation : ∀ e t E M L H S C T,
 
 \begin{figure}
 \begin{BVerbatim}
-Theorem soundness : ∀ e t M H C T1 T2 L S,
+Theorem Soundness : ∀ e t M H C T1 T2 L S,
   typing [] [] [] e T1  →
   (∃ E v,
     is_value v →
@@ -470,31 +470,28 @@ Theorem soundness : ∀ e t M H C T1 T2 L S,
 \label{soundnesstheorem}
 \end{figure}
 
-
 \section{Future Work}
 
-The work presented in this paper is a small fraction of the
-amount of work required to build a complete, correct-by-construction HPC
-application. In this section, we outline some of the possible paths towards
-this goal. 
+The work presented in this paper is a small fraction of the amount of work
+required to build a complete, correct-by-construction HPC application. In this
+section, we outline some of the possible paths towards this goal. 
 
 As mentioned earlier, one of the important characteristics of large formally
 correct systems is modularity. This modularity has two purposes. On the one
 hand, it enables ease of implementation. The second, analogous advantage, is
 that modularity eases the burden of proofs. By defining
 specifications as abstractions, one can separate proof concerns into proofs of
-individual components or modules. For
-example, by composing a proof that a program's serial semantics comply with a
-formal specification with a proof that a parallel language respects those
-serial semantics, it is possible derive a proof that a parallel program respects the
-original formal semantics. In HPC, by applying this idea to parallel
-programming models like Legion, we can separate the application developer from
-having to prove correctness with respect to one or more increasingly complex,
-heterogeneous architectures. Instead, we can provide an intermediate layer,
-like Legion, that allows application developers to reason and prove correctness
-to much simpler operational semantics, and then prove that those semantics are
-retained even on the complex, heterogeneous architectures of today's
-HPC Systems.
+individual components or modules. For example, by composing a proof that a
+program's serial semantics comply with a formal specification with a proof that
+a parallel language respects those serial semantics, it is possible derive a
+proof that a parallel program respects the original formal semantics. In HPC,
+by applying this idea to parallel programming models like Legion, we can
+separate the application developer from having to prove correctness with
+respect to one or more increasingly complex, heterogeneous architectures.
+Instead, we can provide an intermediate layer, like Legion, that allows
+application developers to reason and prove correctness to much simpler
+operational semantics, and then prove that those semantics are retained even on
+the complex, heterogeneous architectures of today's HPC Systems.
 
 However modularly specifying HPC is not easy and is a challenging research
 problem. We illustrate some of these difficulties in the following section.
