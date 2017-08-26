@@ -66,68 +66,69 @@ The heterogenity and massive scale of extreme scale systems are making the
 traditional ad hoc implementation of programming models impractical. Formal
 specification and verification of programming models is a promising approach to
 ensuring correct behavior on heterogeneous systems at scales that would be
-impractical for empirical verification. In this paper we formalize the semantics
-of the Legion programming model which uses logical regions of memory to reason about 
-locality and concurrency in a mechanized
-proof assistant, Coq. We then show how this enables formal reasoning about the
-model and
-prove theorems about the semantics. We also discuss how to extend this work to
-prove that serial semantics are preserved and how to extend the effort to
-provide a complete proof of the correctness of its implementation.
+impractical for empirical verification. In this paper we formalize the
+semantics of the Legion programming model which uses logical regions of memory
+to reason about locality and concurrency in a mechanized proof assistant, Coq.
+We then show how this enables formal reasoning about the model and prove
+theorems about the semantics. We also discuss how to extend this work to prove
+that serial semantics are preserved and how to extend the effort to provide a
+complete proof of the correctness of its implementation.
 \end{abstract}
 
 \maketitle
 
 \section{Introduction}
-As High Performance Computing (HPC) systems run increasingly complex simulations at
-increasingly large scales optimization of resource usage becomes proportionally
-more important in terms of both economic efficiency and scientific productivity. However the complexity of the interaction of the different
-factors being optimized, such as power consumption, computational intensity and
-I/O thoughput are outstripping the ability of individual researchers to understand or debug empirically.
+As High Performance Computing (HPC) systems run increasingly complex
+simulations at increasingly large scales optimization of resource usage becomes
+proportionally more important in terms of both economic efficiency and
+scientific productivity. However the complexity of the interaction of the
+different factors being optimized, such as power consumption, computational
+intensity and I/O thoughput are outstripping the ability of individual
+researchers to understand or debug empirically.
 
-Given the importance of importance of HPC systems to issues of both national and
-economic security being able to efficiently and correctly specify, develop and
-validate these systems is an important research challenge with impacts 
-ranging from climate modeling to nuclear safety.
+Given the importance of importance of HPC systems to issues of both national
+and economic security, being able to efficiently and correctly specify,
+develop, and validate these systems is an important research challenge with
+impacts ranging from climate modeling to nuclear safety.
 
 Formal specification and code proved by formal methods such as program logics
-provide the strongest guarantees of correctness. Specifications describe of how a program
-should behave, while proofs show that a implementations conform to
-their specifications. These \emph{formal} specifications and proofs 
-have been embedded in a machine-checked formal
-logic \cite{bertot2013interactive, nipkow2002isabelle, pfenning1999system,
+provide the strongest guarantees of correctness. Specifications describe how
+a program should behave, while proofs show that a implementations conform to
+their specifications. \emph{Formal} specifications and proofs are those that
+have been embedded in a machine-checked formal logic
+\cite{bertot2013interactive, nipkow2002isabelle, pfenning1999system,
 jackson1994nuprl}. This process of formalizing specifications and proofs in
 machine checked logics has been shown to catch common errors in previously
-informal proofs, and therefore provide higher 
-assurance of correctness than alternative methods \cite{clarke1996formal,
-yang2011finding}.
+informal proofs, and therefore provide higher assurance of correctness than
+alternative methods \cite{clarke1996formal, yang2011finding}.
 
 In addition, recent work has shown that modular, composable formal
 specifications enable formal correctness proofs for large software systems that
-were previously thought unattainable \cite{weng2016deepspec}. By integrating a formal
-specification tightly with an implementation, one can achieve the high
+were previously thought unattainable \cite{weng2016deepspec}. By integrating a
+formal specification tightly with an implementation, one can achieve the high
 levels of confidence in a codes' adherence to its
 specification\cite{weng2016deepspec}. For example, the Compcert project
 provides a specification for the C language, implements it as series of
 composed modules which are proved correct independently before being combined
-into an optimizing C compiler. The success of Compcert in removing compiler bugs has been well
-documented ~\cite{leroy2012compcert}. We will discuss later how Compcert could be used in building
-verifiable HPC systems.
+into an optimizing C compiler. The success of Compcert in removing compiler
+bugs has been well documented ~\cite{leroy2012compcert}. We will discuss later
+how Compcert could be used in building verifiable HPC systems.
 
 HPC programming models are particularly attractive target for these composable
 specifications and verified implementations because of their importance 
 ensuring that simulation codes stay maintainable, performant, and portable at
-extreme scales\cite{diaz2012survey}.
-We claim in particular that formalizing programming models have wide ranging
-impact across the spectrum of HPC application development --any composable correctness
-proofs can be leveraged into proofs of correctness of every program using the
-model rather than having to be reimplemented on a per application basis.
+extreme scales\cite{diaz2012survey}.  We claim in particular that formalizing
+programming models have wide ranging impact across the spectrum of HPC
+application development --any composable correctness proofs can be leveraged
+into proofs of correctness of every program using the model rather than having
+to be reimplemented on a per application basis.
 
 In this paper, we apply these composable specification and verification methods
-to a recent programming model, Legion, by formalize its
-semantics and type system in the Coq proof assistant. We then prove a few supporting lemmas as examples of
-the kinds of things one can prove in an HPC settings. Finally, we discuss the
-some of the possible paths towards a full, formally correct implementation.
+to a recent programming model, Legion, by formalize its semantics and type
+system in the Coq proof assistant. We then prove a few supporting lemmas as
+examples of the kinds of things one can prove in an HPC settings. Finally, we
+discuss the some of the possible paths towards a full, formally correct
+implementation.
 
 This paper makes the following contributions:
 \begin{itemize}
@@ -442,33 +443,31 @@ the list of functions in the \texttt{T-Program} relation has no corresponding
 transition in the operational semantics). 
 
 The theorems we are using are described in Figure~\ref{soundnesstheorem} and
-Figure~\ref{completenesstheorem} (see \texttt{https://github.com/lanl/formallegion}
+Figure~\ref{preservationtheorem} (see \texttt{https://github.com/lanl/formallegion}
 for Coq versions of the proofs). 
 
 \begin{figure}
 \begin{BVerbatim}
-Theorem preservation : forall (e5:e) (t:T) (E:E) (M:M) (L:L) 
-(H:H) (S:list (e * e)) (C:list e) (T:T),
-    exists v,
-      eval M L H S C e5 v E ->
-      typing EmptyContext EmptyPriv EmptyConstraint e5 T  ->
-      exists G P Omega T, typing G P Omega v T.
+Theorem preservation : ∀ e t E M L H S C T,
+  ∃ v,
+    eval M L H S C e v E →
+    typing [] [] [] e T → 
+    ∃ G P Ω, typing G P Ω v T.
 \end{BVerbatim}
-\caption{preservation theorem}
+\caption{Preservation theorem}
 \label{preservationtheorem}
 \end{figure}
 
 \begin{figure}
 \begin{BVerbatim}
-Theorem progress : forall  (e5:e) (t:T) (M:M) (H:H)  
-(C:list e) (T1 T2:T) L (S:list (e * e)),
-    typing EmptyContext EmptyPriv EmptyConstraint e5 T1  ->
-    (exists E v ,
-        is_value v ->
-        eval M L H S C e5 v E).
+Theorem soundness : ∀ e t M H C T1 T2 L S,
+  typing [] [] [] e T1  →
+  (∃ E v,
+    is_value v →
+    eval M L H S C e v E).
 \end{BVerbatim}
-\caption{progress theorem}
-\label{progresstheorem}
+\caption{Soundness theorem}
+\label{soundnesstheorem}
 \end{figure}
 
 
