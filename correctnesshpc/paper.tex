@@ -447,28 +447,28 @@ for Coq versions of the proofs).
 
 \begin{figure}
 \begin{BVerbatim}
-Theorem preservation : forall (e5:e) (t:T) (E:E) (M:M) (L:L) 
-(H:H) (S:list (e * e)) (C:list e) (T:T),
+Theorem preservation : forall (e5:e) (t:T) (E:E) (M:M) 
+(L:L) (H:H) (S:list (e * e)) (C:list e) (T:T),
     exists v,
       eval M L H S C e5 v E ->
-      typing EmptyContext EmptyPriv EmptyConstraint e5 T  ->
+      typing NilContext NilPriv NilConstraint e5 T  ->
       exists G P Omega T, typing G P Omega v T.
 \end{BVerbatim}
-\caption{preservation theorem}
-\label{preservationtheorem}
+\caption{soundness theorem}
+\label{soundnesstheorem}
 \end{figure}
 
 \begin{figure}
 \begin{BVerbatim}
 Theorem progress : forall  (e5:e) (t:T) (M:M) (H:H)  
 (C:list e) (T1 T2:T) L (S:list (e * e)),
-    typing EmptyContext EmptyPriv EmptyConstraint e5 T1  ->
+    typing NilContext NilPriv NilConstraint e5 T1  ->
     (exists E v ,
         is_value v ->
         eval M L H S C e5 v E).
 \end{BVerbatim}
-\caption{progress theorem}
-\label{progresstheorem}
+\caption{completeness theorem}
+\label{completenesstheorem}
 \end{figure}
 
 
