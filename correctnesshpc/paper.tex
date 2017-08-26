@@ -387,7 +387,55 @@ Lemma resp_clos : ∀ M Ω, M ~ Ω ↔ M ~* Ω.
 \label{regionrelproof}
 \end{figure}
 
-TODO: Noah, if you want to put any other proof stuff here feel free. 
+\subsection{Full Implementation of the Specification}
+In addition to proving theorems and lemmas about the semantics of Legion as they
+relate to HPC memory models, another goal of a formal specification is to ensure
+both the completeness and soundness of the Core Legion model. Much of the
+necessary implementation work here is ensuring that the entire grammar of the
+language is both type safe and its operational semantics contain transition
+rules for all productions in the language.
+
+To do this we are writing our proofs of progress and preservation (ie. that well
+typed expressions evaluate to a value or diverge and that
+every transition in the operational semantics produces a well typed value given
+a well typed expression) together with our implementation of the semantics of
+the Core Legion language.
+
+Thus far this approach has acted as a sanity check for our implementation and helped us
+handle unspecified corner cases in the Core Legion specification (eg. the list
+of functions in the \texttt{T-Program} relation has no corresponding transition in the
+operational semantics). 
+
+The theorems we are using are described in Figure~\ref{preservationtheorem} and
+Figure~\ref{progresstheorem} (see
+\texttt{https://github.com/lanl/formallegion} for the in progress proofs). 
+
+\begin{figure}
+\begin{BVerbatim}
+Theorem preservation : forall (e5:e) (t:T) (E:E) (M:M) (L:L) 
+(H:H) (S:list (e * e)) (C:list e) (T:T),
+    exists v,
+      eval M L H S C e5 v E ->
+      typing EmptyContext EmptyPriv EmptyConstraint e5 T  ->
+      exists G P Omega T, typing G P Omega v T.
+\end{BVerbatim}
+\caption{preservation theorem}
+\label{preservationtheorem}
+\end{figure}
+
+\begin{figure}
+\begin{BVerbatim}
+Theorem progress : forall  (e5:e) (t:T) (M:M) (H:H)  
+(C:list e) (T1 T2:T) L (S:list (e * e)),
+    typing EmptyContext EmptyPriv EmptyConstraint e5 T1  ->
+    (exists E v ,
+        is_value v ->
+        eval M L H S C e5 v E).
+\end{BVerbatim}
+\caption{progress theorem}
+\label{progresstheorem}
+\end{figure}
+
 
 \section{Future Work}
 
