@@ -1,7 +1,8 @@
-Require Import util syntax.
 Require Import Strings.String.
+Require Import List.
 Open Scope type_scope.
 Open Scope string_scope.
+Require Import util syntax.
 
 (*
 Inductive T := 
